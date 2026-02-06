@@ -1,7 +1,7 @@
 {
   "buildCommand": "cd backend && npx prisma generate --schema=prisma/schema.postgres.prisma && cd ../frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install --prefix frontend && npm install --prefix backend",
+  "installCommand": "npm install --prefix frontend --include=dev && npm install --prefix backend",
   "framework": null,
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/[[...path]]" },
