@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd backend && npx prisma generate --schema=prisma/schema.postgres.prisma && cd ../frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "npm install --prefix frontend && npm install --prefix backend",
   "framework": null,

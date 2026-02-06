@@ -49,13 +49,12 @@ git push origin main
 1. Go to [vercel.com](https://vercel.com) and sign in with GitHub.
 2. **Add New Project** → import your **PointTracker** repo.
 3. **Configure project**
-   - **Root Directory:** leave as `.` (repo root).
+   - **Root Directory:** leave **empty** or set to `.` (repo root). Do not set it to `frontend`.
    - **Framework Preset:** Other (or leave as detected).
-   - **Build Command:** `npm run build`  
-     (Uses root `package.json`: runs Prisma generate with Postgres schema, then builds the frontend.)
-   - **Output Directory:** `frontend/dist`
-   - **Install Command:**  
-     `npm install --prefix frontend && npm install --prefix backend`
+   - **Build Command**, **Output Directory**, and **Install Command** are set in the repo’s `vercel.json`; you can leave the defaults (Vercel will use the file). If you override, use:
+     - **Build:** `cd backend && npx prisma generate --schema=prisma/schema.postgres.prisma && cd ../frontend && npm run build`
+     - **Output:** `frontend/dist`
+     - **Install:** `npm install --prefix frontend && npm install --prefix backend`
 
 4. **Environment variables** (add before deploying):
 
@@ -125,6 +124,9 @@ If you ever deploy the frontend elsewhere, set:
 
 ### If something fails
 
-- **Build:** Check the build logs. Ensure `DATABASE_URL` is set and that `npm run build` runs (Prisma generate + frontend build).
-- **API 500:** Check **Vercel** → **Functions** → logs for the `/api` function. Ensure `DATABASE_URL` is correct and the Neon DB is reachable.
+- **Root Directory:** In Vercel → Project Settings → General, set **Root Directory** to empty or `.` (repo root). If it’s set to `frontend`, the build will fail (no `backend/` or `api/`).
+- **Build fails after Install:** The log you see is only the install step. Open the build and scroll to the **Build** step to see the real error. Typical causes:
+  - **Prisma:** `prisma generate` fails → check that `backend/prisma/schema.postgres.prisma` exists and is committed.
+  - **Frontend:** `npm run build` in frontend fails → fix any TypeScript/Vite errors shown there.
+- **API 500 at runtime:** Vercel → **Functions** → select the `/api` function → **Logs**. Ensure `DATABASE_URL` is set and is your Neon connection string.
 - **CORS:** Set `CORS_ORIGIN` to your exact Vercel URL (e.g. `https://pointtracker-xxx.vercel.app`).
