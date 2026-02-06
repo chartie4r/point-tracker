@@ -62,7 +62,7 @@ git push origin main
    |------------------|--------------------------|--------|
    | `DATABASE_URL`   | Your Neon connection string | From Step 1. |
    | `SESSION_SECRET` | Long random string (e.g. 32+ chars) | Required. |
-   | `CORS_ORIGIN`    | `https://your-project.vercel.app` | Your Vercel app URL; you can set this after the first deploy. |
+   | `CORS_ORIGIN`    | `https://your-project.vercel.app` | Your Vercel app URL (no trailing slash); you can set this after the first deploy. |
    | `APP_URL`        | `https://your-project.vercel.app` | Used for password-reset links. |
    | `NODE_ENV`       | `production`            | Optional. |
 
@@ -130,3 +130,4 @@ If you ever deploy the frontend elsewhere, set:
   - **Frontend:** `npm run build` in frontend fails → fix any TypeScript/Vite errors shown there.
 - **API 500 at runtime:** Vercel → **Functions** → select the `/api` function → **Logs**. Ensure `DATABASE_URL` is set and is your Neon connection string.
 - **CORS:** Set `CORS_ORIGIN` to your exact Vercel URL (e.g. `https://pointtracker-xxx.vercel.app`).
+- **401 on Cards page (logged out after login):** Ensure `SESSION_SECRET` is set in Vercel env vars (32+ chars). If you use preview deployments, `CORS_ORIGIN` must match the URL you’re on (or leave it unset so it reflects the request origin). In DevTools → Network, check that the `session` cookie is sent with requests to `/api/auth/me` and `/api/cards`.

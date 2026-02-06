@@ -25,12 +25,16 @@ async function ensureSuperadminOnce() {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(async (req, res, next) => {
   await ensureSuperadminOnce();
   next();
 });
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.replace(/\/$/, '')
+  : true;
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true,
+  origin: corsOrigin,
   credentials: true,
 }));
 app.use(cookieParser());
@@ -40,6 +44,7 @@ app.use(
     name: 'session',
     keys: [SESSION_SECRET],
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
