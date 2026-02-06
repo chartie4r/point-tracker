@@ -1,0 +1,95 @@
+// Use this schema for Vercel (PostgreSQL / Neon). Local dev can keep schema.prisma (SQLite).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  name              String?
+  role              String    @default("user") // "user" | "superadmin"
+  resetToken        String?   @map("reset_token")
+  resetTokenExpires DateTime? @map("reset_token_expires")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  cards             Card[]
+
+  @@map("users")
+}
+
+model Card {
+  id                   String    @id @default(uuid())
+  userId               String?   @map("user_id")
+  user                 User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardName             String    @map("card_name")
+  type                 String    // VISA | MASTERCARD | AMEX
+  status               String    // Open | Closed | Refused | To_Open
+  pointsType           String    @map("points_type")
+  bank                 String    // AMEX | BMO | BNC | CIBC | RBC | Scotia | TD
+  lineOfCredit         Int?      @map("line_of_credit")
+  openDate             DateTime? @map("open_date")
+  closeDate            DateTime? @map("close_date")
+  possibleReopenDate   DateTime? @map("possible_reopen_date")
+  annualCost           Int?      @map("annual_cost")
+  progression          Decimal?
+  expenses             Int?
+  deadline             DateTime?
+  pointsValue          Int?      @map("points_value")
+  pointsDetails        String?   @map("points_details")
+  milesopediaUrl       String?   @map("milesopedia_url")
+  milesopediaSlug      String?   @map("milesopedia_slug")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  snapshots            WeeklySnapshot[]
+
+  @@map("cards")
+}
+
+model WeeklySnapshot {
+  id             String   @id @default(uuid())
+  cardId         String   @map("card_id")
+  weekStartDate  DateTime @map("week_start_date")
+  pointsValue    Int      @map("points_value")
+  expenses       Int?
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  card           Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, weekStartDate])
+  @@map("weekly_snapshots")
+}
+
+model ScrapedCard {
+  id              String   @id @default(uuid())
+  cardName        String   @map("card_name")
+  type            String   // VISA | MASTERCARD | AMEX
+  bank            String   // AMEX | BMO | BNC | CIBC | RBC | Scotia | TD
+  pointsType      String   @map("points_type")
+  annualCost      Int?     @map("annual_cost")
+  welcomeValueY1  Int?     @map("welcome_value_y1")
+  welcomeValueY2  Int?     @map("welcome_value_y2")
+  minSpend        Int?     @map("min_spend")
+  bonusDetails    String?  @map("bonus_details")
+  milesopediaUrl  String?  @map("milesopedia_url")
+  milesopediaSlug String   @map("milesopedia_slug")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([milesopediaSlug])
+  @@map("scraped_cards")
+}
+
+model CatalogRefresh {
+  id          String   @id // "catalog"
+  completedAt DateTime @map("completed_at")
+  @@map("catalog_refresh")
+}

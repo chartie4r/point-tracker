@@ -1,0 +1,11 @@
+node_modules
+.env
+.env.*
+*.db
+*.db-journal
+.git
+.gitignore
+README*
+fly.toml
+Dockerfile
+.dockerignore

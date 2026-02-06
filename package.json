@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cd backend && npx prisma generate --schema=prisma/schema.postgres.prisma && cd ../frontend && npm run build",
+    "build:local": "cd backend && npx prisma generate && cd ../frontend && npm run build"
+  }
+}
