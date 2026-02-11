@@ -49,7 +49,12 @@
               <router-link :to="`/cards/${card.id}`" class="font-semibold text-primary-600 hover:text-primary-700">{{ card.cardName }}</router-link>
             </td>
             <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ card.type }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ card.bank }}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
+              <div class="flex items-center gap-2">
+                <BankLogo :bank="card.bank" size="sm" />
+                <span>{{ card.bank }}</span>
+              </div>
+            </td>
             <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ statusLabel(card.status) }}</td>
             <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ pointsTypeLabel(card.pointsType) }}</td>
             <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ card.pointsValue ?? '–' }}</td>
@@ -89,6 +94,7 @@ import { useRouter } from 'vue-router';
 import { getCards, deleteCard } from '../api/client';
 import { useI18n } from 'vue-i18n';
 import { CARD_STATUSES, BANKS, POINTS_TYPES, pointsTypeLabel } from '../constants';
+import BankLogo from '../components/BankLogo.vue';
 
 const { t } = useI18n();
 const router = useRouter();

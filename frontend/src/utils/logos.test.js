@@ -3,10 +3,14 @@ import { getBankLogoUrl, getBankInitials, getCardNetworkLogoUrl } from './logos.
 
 describe('logos', () => {
   describe('getBankLogoUrl', () => {
-    it('returns path for known bank', () => {
+    it('returns local logo path for known bank', () => {
       expect(getBankLogoUrl('AMEX')).toBe('/logos/banks/AMEX.svg');
       expect(getBankLogoUrl('RBC')).toBe('/logos/banks/RBC.svg');
       expect(getBankLogoUrl('Scotia')).toBe('/logos/banks/Scotia.svg');
+      expect(getBankLogoUrl('TD')).toBe('/logos/banks/TD.svg');
+      expect(getBankLogoUrl('BMO')).toBe('/logos/banks/BMO.svg');
+      expect(getBankLogoUrl('BNC')).toBe('/logos/banks/BNC.svg');
+      expect(getBankLogoUrl('CIBC')).toBe('/logos/banks/CIBC.svg');
     });
 
     it('returns null for unknown bank', () => {
@@ -29,10 +33,10 @@ describe('logos', () => {
   });
 
   describe('getCardNetworkLogoUrl', () => {
-    it('returns path for visa, mastercard, amex', () => {
-      expect(getCardNetworkLogoUrl('VISA')).toBe('/logos/cards/visa.svg');
-      expect(getCardNetworkLogoUrl('MASTERCARD')).toBe('/logos/cards/mastercard.svg');
-      expect(getCardNetworkLogoUrl('AMEX')).toBe('/logos/cards/amex.svg');
+    it('returns CDN URL for visa, mastercard, amex', () => {
+      expect(getCardNetworkLogoUrl('VISA')).toBe('https://cdn.worldvectorlogo.com/logos/visa-10.svg');
+      expect(getCardNetworkLogoUrl('MASTERCARD')).toBe('https://cdn.worldvectorlogo.com/logos/mastercard-modern-design-.svg');
+      expect(getCardNetworkLogoUrl('AMEX')).toBe('https://cdn.worldvectorlogo.com/logos/american-express-stacked.svg');
     });
 
     it('returns null for unknown type', () => {

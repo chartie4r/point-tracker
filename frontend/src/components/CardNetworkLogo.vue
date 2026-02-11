@@ -32,9 +32,7 @@ const imgFailed = ref(false);
   flex-shrink: 0;
   width: 40px;
   height: 26px;
-  border-radius: 4px;
   overflow: hidden;
-  background: #f5f5f5;
 }
 .card-network-logo__img {
   width: 100%;

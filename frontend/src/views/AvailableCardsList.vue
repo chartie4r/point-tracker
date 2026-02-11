@@ -52,10 +52,7 @@
     <ul v-if="!loading && !error" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <li v-for="card in pagedCards" :key="cardKey(card)" class="group flex flex-col border border-slate-200 bg-white p-5 transition hover:border-primary-200">
         <div class="mb-2 flex items-center justify-between">
-          <div class="h-8 w-12 overflow-hidden bg-slate-50 flex items-center justify-center flex-shrink-0 border border-slate-200" :title="card.bank">
-            <img v-if="getBankLogoUrl(card.bank)" :src="getBankLogoUrl(card.bank)" :alt="card.bank" class="h-full w-full object-contain" />
-            <span v-else class="text-xs font-bold text-slate-500">{{ getBankInitials(card.bank) }}</span>
-          </div>
+          <BankLogo :bank="card.bank" />
           <CardNetworkLogo :type="card.type" />
         </div>
         <strong class="font-display text-slate-900">{{ card.cardName }}</strong>
@@ -116,8 +113,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { getAvailableCards, scrapeMilesopedia, refreshAvailableCard } from '../api/client';
 import { CARD_TYPES, BANKS, POINTS_TYPES, pointsTypeLabel } from '../constants';
-import { getBankLogoUrl, getBankInitials } from '../utils/logos';
 import CardNetworkLogo from '../components/CardNetworkLogo.vue';
+import BankLogo from '../components/BankLogo.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -1,5 +1,7 @@
 /**
- * Local logo paths (public/logos/). No external API dependency.
+ * Bank logos (local SVGs from public/logos/banks/).
+ * Sourced from the same brands as Brandfetch: TD, AMEX, BMO, BNC, CIBC, RBC, Scotia.
+ * Refresh with: node backend/scripts/fetch-brandfetch-logos.js (downloads from Wikimedia/Wikipedia).
  */
 const BANK_LOGO_IDS = ['AMEX', 'BMO', 'BNC', 'CIBC', 'RBC', 'Scotia', 'TD'];
 
@@ -15,11 +17,15 @@ export function getBankInitials(bank) {
   return bank.length >= 2 ? bank.slice(0, 2) : bank;
 }
 
+/** Card network logo URLs (World Vector Logo CDN). */
+const CARD_NETWORK_LOGO_URLS = {
+  visa: 'https://cdn.worldvectorlogo.com/logos/visa-10.svg',
+  mastercard: 'https://cdn.worldvectorlogo.com/logos/mastercard-modern-design-.svg',
+  amex: 'https://cdn.worldvectorlogo.com/logos/american-express-stacked.svg',
+};
+
 export function getCardNetworkLogoUrl(type) {
   if (!type) return null;
   const key = String(type).toLowerCase().replace(/\s/g, '');
-  if (key === 'visa' || key === 'mastercard' || key === 'amex') {
-    return `/logos/cards/${key}.svg`;
-  }
-  return null;
+  return CARD_NETWORK_LOGO_URLS[key] ?? null;
 }
