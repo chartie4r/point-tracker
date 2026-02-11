@@ -2,6 +2,8 @@
 
 This document orders the feature ideas (functional + UX) in a recommended sequence: foundation and high-value first, dependencies respected, growth and monetization later.
 
+**For single-agent scoping:** see [BACKLOG-BY-EPIC.md](BACKLOG-BY-EPIC.md), which groups these ideas into epics sized for one agent session each.
+
 ---
 
 ## Order (1 → 28)
@@ -28,9 +30,9 @@ This document orders the feature ideas (functional + UX) in a recommended sequen
 | **18** | API for power users | 18-api-for-power-users | Read-only API; natural **premium** candidate. |
 | **19** | Content hub / blog | 19-content-hub-blog | SEO and authority; affiliate/partner links. Supports acquisition. |
 | **20** | Partner offers | 20-partner-offers | B2B / promoted deals; do when we have traffic and partners. |
-| **21** | Dashboard summary metrics | 21-dashboard-summary-metrics | Top-of-dashboard tiles (Total Points, Active Cards, Bonus Progress) that surface key info at a glance and link into deeper pages. Uses existing cards/points/bonus data. |
+| **21** | Dashboard summary metrics | 21-dashboard-summary-metrics | Top-of-dashboard tiles (Total Points, Active Cards, Bonus Progress) that surface key info at a glance and link into deeper pages. **Prerequisite:** Card Pipeline schema (`welcomeBonusCompletedAt` on Card) for bonus-in-progress count. Uses existing cards/points/bonus data. |
 | **22** | Points balance by program | 22-points-balance-by-program | Dashboard panel with one card per program; foundational for understanding where points live and for powering travel goals. |
-| **23** | Active bonus trackers UI (improvement) | 23-active-bonus-trackers-ui | Rich “Active Bonus Trackers” section (progress bars, days left, $ remaining) built on Card Pipeline / AI Bonus Plan; drives daily engagement. |
+| **23** | Active bonus trackers UI (improvement) | 23-active-bonus-trackers-ui | Rich “Active Bonus Trackers” section (progress bars, days left, $ remaining) built on Card Pipeline / AI Bonus Plan. **Prerequisite:** schema `welcomeBonusCompletedAt`, `minSpend` on Card. Drives daily engagement. |
 | **24** | Travel goals tracking | 24-travel-goals-tracking | Travel goals entity + tile + page (e.g. “Tokyo, 85% done”) that ties points balances and AI planning to concrete trip outcomes. |
 | **25** | In-app help widget | 25-in-app-help-widget | Floating Help button with FAQ links and contact/feedback form; improves onboarding and support, can come later once more features are live. |
 | **26** | Family points ledger & valuations | 26-family-points-ledger | Central place to define point programs and cents-per-point valuations (per family or user). Becomes the backbone for points balance, travel goals, and optimization features. |
@@ -47,5 +49,7 @@ This document orders the feature ideas (functional + UX) in a recommended sequen
 - **Growth (12–15):** Share offer, referral, household, extension.  
 - **Community / expansion (16–17):** Deal board, multi-currency.  
 - **Monetization / scale (18–20) + UX polish (25):** API, content hub, partner offers, in-app help.
+
+**Prerequisite for 21, 22, 23:** Implement the Card Pipeline schema change as part of the first epic that delivers 21–23 (see BACKLOG-BY-EPIC.md E7): add `welcomeBonusCompletedAt` (DateTime?, optional) and `minSpend` (Int?, optional) on `Card`; migration + optional backfill. Then 21, 22, 23 are bundled in **E7 – Dashboard & active bonus trackers**.
 
 Adjust order if you ship Bonus Value Tracking or Card Pipeline earlier; wishlist (9), comparison (7), dashboard metrics (21), points balance (22), and active bonus trackers (23) all benefit from those.
