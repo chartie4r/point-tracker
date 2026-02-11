@@ -1,10 +1,17 @@
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import { PrismaClient } from '@prisma/client';
+import { extractCardDataWithAi, isAiExtractionEnabled } from './milesopediaAiExtractor.js';
 
 const BASE_URL = 'https://milesopedia.com';
 const SITEMAP_URL = `${BASE_URL}/card-sitemap.xml`;
 const RATE_LIMIT_MS = Number(process.env.SCRAPER_RATE_LIMIT_MS) || 3000;
+const USE_PUPPETEER = process.env.SCRAPER_USE_PUPPETEER === 'true';
+
+/** Whether the full catalog refresh (scrapeMilesopediaCards) will use Puppeteer for card pages. */
+export function isPuppeteerEnabled() {
+  return USE_PUPPETEER;
+}
 
 const prisma = new PrismaClient();
 
@@ -171,10 +178,11 @@ function extractEmbeddedCardData(html) {
     if (!Number.isNaN(n) && n < 10000) out.annualCost = n;
   }
 
-  // "minimum_spending":"40000$" (may be escaped in HTML; capture digits after key)
-  const minSpendM = html.match(/minimum_spending[^0-9]*(\d+)/);
-  if (minSpendM) {
-    const n = parseInt(minSpendM[1], 10);
+  // "minimum_spending":"6 000 $" or "40000$" - parse full value (spaces = French number formatting)
+  const minSpendStrM = html.match(/"minimum_spending"\s*:\s*"([^"]+)"/);
+  if (minSpendStrM) {
+    const cleaned = minSpendStrM[1].replace(/\s/g, '').replace(/[^\d]/g, '');
+    const n = parseInt(cleaned, 10);
     if (!Number.isNaN(n) && n >= 100 && n < 10000000) out.minSpend = n;
   }
 
@@ -277,6 +285,21 @@ function extractEmbeddedCardData(html) {
 }
 
 /**
+ * Detect explicit "no welcome bonus" (e.g. "Prime de bienvenue" + "Aucune offre de bienvenue" or embedded "welcome_bonus":"Aucune offre de bienvenue").
+ * When true, first-year value should be shown as "No welcome offer" rather than 0$ or empty.
+ */
+function extractNoWelcomeBonus(html) {
+  if (!html || typeof html !== 'string') return false;
+  const lower = html.toLowerCase();
+  // Embedded JSON: "welcome_bonus":"Aucune offre de bienvenue" or "No welcome offer"
+  if (/["']welcome_bonus["']\s*:\s*["'](?:aucune\s+offre\s+de\s+bienvenue|no\s+welcome\s+offer)/i.test(html)) return true;
+  // Page text: "Aucune offre de bienvenue" or "No welcome offer" (often under "Prime de bienvenue")
+  if (/aucune\s+offre\s+de\s+bienvenue/i.test(html)) return true;
+  if (/no\s+welcome\s+offer/i.test(html)) return true;
+  return false;
+}
+
+/**
  * Extract welcome offer dollar value (e.g. "une valeur pouvant aller jusqu'à 1 500 $") from page text.
  */
 function extractWelcomeDollarValue(html) {
@@ -291,7 +314,8 @@ function extractWelcomeDollarValue(html) {
   return null;
 }
 
-async function fetchPage(url, tries = 3) {
+/** Fetch HTML with node-fetch (no JS execution). Used for sitemap and when Puppeteer is disabled. */
+async function fetchWithFetch(url, tries = 3) {
   let lastError;
   for (let attempt = 1; attempt <= tries; attempt += 1) {
     try {
@@ -317,7 +341,6 @@ async function fetchPage(url, tries = 3) {
         throw err;
       }
 
-      // Backoff before retrying
       const backoff = RATE_LIMIT_MS * attempt;
       console.warn(`Fetch failed for ${url} (attempt ${attempt}/${tries}): ${message}. Retrying in ${backoff}ms…`);
       await delay(backoff);
@@ -326,10 +349,52 @@ async function fetchPage(url, tries = 3) {
   throw lastError;
 }
 
-export async function scrapeMilesopediaCards() {
-  console.log('[Milesopedia] Refresh all cards: starting…');
-  // Use Milesopedia card sitemap for a complete list of credit-card URLs
-  const xml = await fetchPage(SITEMAP_URL);
+/** Fetch card page HTML with Puppeteer (JS-rendered content). Waits for welcome offer element or network idle. */
+async function fetchWithPuppeteer(browser, url) {
+  const page = await browser.newPage();
+  try {
+    await page.setUserAgent('PointTracker/1.0 (Personal points tracker; respectful crawler)');
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'fr-CA,fr;q=0.9,en;q=0.8' });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // Wait for JS-rendered content: welcome offer or fallback to short delay
+    await Promise.race([
+      page.waitForSelector('#welcome_offer_year_one, [id*="welcome_offer"]', { timeout: 8000 }).catch(() => {}),
+      delay(3000),
+    ]);
+    return await page.content();
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+/** Get card page HTML: Puppeteer if enabled (better accuracy), otherwise node-fetch. */
+async function fetchCardPage(url, browser = null) {
+  if (USE_PUPPETEER && browser) {
+    return fetchWithPuppeteer(browser, url);
+  }
+  if (USE_PUPPETEER && !browser) {
+    const { default: puppeteer } = await import('puppeteer');
+    const b = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    try {
+      return await fetchWithPuppeteer(b, url);
+    } finally {
+      await b.close().catch(() => {});
+    }
+  }
+  return fetchWithFetch(url);
+}
+
+/**
+ * @param {{ useAi?: boolean }} [options] - useAi: when true, call Claude to extract minSpend/minSpendNotes (default false to minimize API cost).
+ */
+export async function scrapeMilesopediaCards(options = {}) {
+  const useAi = options.useAi === true;
+  console.log('[Milesopedia] Refresh all cards: starting…', USE_PUPPETEER ? '(Puppeteer)' : '(fetch only)', useAi ? '(AI enabled)' : '(no AI)');
+  // Sitemap is XML; always use fetch (no JS).
+  const xml = await fetchWithFetch(SITEMAP_URL);
   await delay(RATE_LIMIT_MS);
   const $ = cheerio.load(xml, { xmlMode: true });
 
@@ -353,6 +418,19 @@ export async function scrapeMilesopediaCards() {
   });
 
   console.log(`[Milesopedia] Sitemap: ${cardLinks.length} card URL(s) to scrape`);
+  let browser = null;
+  if (USE_PUPPETEER) {
+    try {
+      const { default: puppeteer } = await import('puppeteer');
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+    } catch (err) {
+      console.warn('[Milesopedia] Puppeteer launch failed, falling back to fetch:', err.message);
+    }
+  }
+
   const results = [];
   const total = cardLinks.length;
   const dbPayload = (c) => ({
@@ -363,7 +441,9 @@ export async function scrapeMilesopediaCards() {
     annualCost: c.annualCost ?? null,
     welcomeValueY1: c.welcomeValueY1 ?? null,
     welcomeValueY2: c.welcomeValueY2 ?? null,
+    noWelcomeBonus: c.noWelcomeBonus === true,
     minSpend: c.minSpend ?? null,
+    minSpendNotes: c.minSpendNotes ?? null,
     bonusDetails: c.bonusDetails ?? null,
     milesopediaUrl: c.milesopediaUrl ?? null,
     milesopediaSlug: c.milesopediaSlug,
@@ -372,9 +452,10 @@ export async function scrapeMilesopediaCards() {
   for (let i = 0; i < cardLinks.length; i++) {
     const { url, slug } = cardLinks[i];
     try {
-      const pageHtml = await fetchPage(url);
+      const pageHtml = await fetchCardPage(url, browser);
       await delay(RATE_LIMIT_MS);
-      const card = parseCardDetail(pageHtml, url, slug);
+      let card = parseCardDetail(pageHtml, url, slug);
+      if (useAi) card = await mergeAiExtraction(pageHtml, card);
       if (!card.cardName) continue;
       results.push(card);
 
@@ -397,6 +478,10 @@ export async function scrapeMilesopediaCards() {
     }
   }
 
+  if (browser) {
+    await browser.close().catch(() => {});
+  }
+
   console.log(`[Milesopedia] Scrape done: ${results.length} card(s) processed`);
   try {
     const completedAt = new Date();
@@ -413,15 +498,43 @@ export async function scrapeMilesopediaCards() {
   return results;
 }
 
-export async function scrapeSingleMilesopediaCard(url) {
-  console.log('[Milesopedia] scrapeSingleMilesopediaCard:', url);
-  const pageHtml = await fetchPage(url);
+/** Get plain text from page HTML for AI extraction (body text, normalized). */
+function getPageTextForAi(html) {
+  const $ = cheerio.load(html);
+  return $('body').text().replace(/\s+/g, ' ').trim();
+}
+
+/** Merge AI-extracted data into card when OPENAI_API_KEY is set. */
+async function mergeAiExtraction(html, card) {
+  if (!isAiExtractionEnabled()) return card;
+  const text = getPageTextForAi(html);
+  const ai = await extractCardDataWithAi(text);
+  const out = { ...card };
+  if (ai.minSpend != null) out.minSpend = ai.minSpend;
+  if (ai.minSpendNotes != null) out.minSpendNotes = ai.minSpendNotes;
+  if (ai.welcomeValueY1 != null && !card.noWelcomeBonus) out.welcomeValueY1 = ai.welcomeValueY1;
+  return out;
+}
+
+/**
+ * @param {string} url - Milesopedia card page URL
+ * @param {{ useAi?: boolean }} [options] - useAi: when true, run Claude extraction (default false)
+ */
+export async function scrapeSingleMilesopediaCard(url, options = {}) {
+  const useAi = options.useAi === true;
+  console.log('[Milesopedia] scrapeSingleMilesopediaCard:', url, USE_PUPPETEER ? '(Puppeteer)' : '', useAi ? '(AI)' : '');
+  const pageHtml = await fetchCardPage(url);
   const slug = url.replace(/\/$/, '').split('/').pop();
-  return parseCardDetail(pageHtml, url, slug);
+  let card = parseCardDetail(pageHtml, url, slug);
+  if (useAi) card = await mergeAiExtraction(pageHtml, card);
+  return card;
 }
 
 function parseCardDetail(html, url, slug) {
   const $ = cheerio.load(html);
+
+  // Detect explicit "no welcome bonus" (e.g. "Aucune offre de bienvenue") so we can show "No welcome offer" instead of 0$
+  const noWelcomeBonus = extractNoWelcomeBonus(html);
 
   // Prefer embedded JSON when present (authoritative on Milesopedia)
   const embedded = extractEmbeddedCardData(html);
@@ -606,7 +719,7 @@ function parseCardDetail(html, url, slug) {
       if (!Number.isNaN(n) && n > 0 && n < 10000000) minSpend = n;
     }
   }
-  const spends = [];
+  const spends = []; // only dollar amounts (not points) for min spend
   const bonusLines = [];
   $('li, p').each((_, el) => {
     const raw = $(el).text().trim();
@@ -620,19 +733,23 @@ function parseCardDetail(html, url, slug) {
       t.startsWith('les nouvelles');
     if (!isBonusLine) return;
     bonusLines.push(raw);
+    // Only consider amounts in dollar context (e.g. "porté 6 000 $" or "6 000 $ à votre Carte"), not points ("80 000 points")
     if (minSpend === null && raw.includes('$')) {
-      const matches = raw.replace(/\s/g, '').match(/(\d[\d]*)/g);
-      if (matches) {
-        for (const m of matches) {
-          const n = parseInt(m, 10);
-          if (!Number.isNaN(n) && n >= 1000 && n < 1000000) spends.push(n);
+      const dollarAmounts = raw.match(/(\d[\d\s]*)\s*\$/g);
+      if (dollarAmounts) {
+        for (const part of dollarAmounts) {
+          const n = parseInt(part.replace(/\s/g, '').replace(/\$/g, ''), 10);
+          if (!Number.isNaN(n) && n >= 100 && n < 10000000) spends.push(n);
         }
       }
     }
   });
-  if (minSpend === null && spends.length) minSpend = Math.max(...spends);
+  if (minSpend === null && spends.length) minSpend = Math.min(...spends); // use min so we get required spend (6k) not a higher number from same line
 
   const bonusDetails = bonusLines.length ? bonusLines.join('\n') : null;
+
+  // When card explicitly has no welcome offer, set first year value to 0
+  const finalWelcomeValueY1 = noWelcomeBonus ? 0 : (welcomeValueY1 ?? null);
 
   return {
     cardName: cardName || 'Unknown',
@@ -641,9 +758,11 @@ function parseCardDetail(html, url, slug) {
     pointsType: pointsType || 'Aeroplan',
     bank: bank || 'TD',
     annualCost: annualCost ?? null,
-    welcomeValueY1: welcomeValueY1 ?? null,
+    welcomeValueY1: finalWelcomeValueY1,
     welcomeValueY2: welcomeValueY2 ?? null,
+    noWelcomeBonus,
     minSpend: minSpend ?? null,
+    minSpendNotes: null,
     bonusDetails,
     milesopediaUrl: url,
     milesopediaSlug: slug,

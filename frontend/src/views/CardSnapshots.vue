@@ -6,33 +6,33 @@
         <template v-if="card">{{ card.cardName }} – {{ $t('snapshots.title') }}</template>
         <template v-else>{{ $t('snapshots.titleShort') }}</template>
       </h1>
-      <router-link v-if="card" :to="`/cards/${card.id}`" class="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50">{{ $t('snapshots.editCard') }}</router-link>
+      <router-link v-if="card" :to="`/cards/${card.id}`" class="border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-whiteer">{{ $t('snapshots.editCard') }}</router-link>
     </div>
-    <p v-if="loadError" class="mb-4 text-sm text-red-600">{{ loadError }}</p>
+    <p v-if="loadError" class="mb-4 text-sm text-red-400">{{ loadError }}</p>
     <template v-else-if="card">
-      <div class="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div class="mb-6 border border-slate-200 bg-white p-6">
         <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $t('snapshots.addSnapshot') }}</h2>
         <form @submit.prevent="addSnapshot" class="flex flex-wrap items-end gap-4">
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.weekStart') }}</label>
-            <input v-model="newSnapshot.weekStartDate" type="date" required class="block rounded-md border border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm" />
+            <input v-model="newSnapshot.weekStartDate" type="date" required class="block border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.pointsValue') }}</label>
-            <input v-model.number="newSnapshot.pointsValue" type="number" min="0" required class="block w-24 rounded-md border border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm" />
+            <input v-model.number="newSnapshot.pointsValue" type="number" min="0" required class="block w-24 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.expenses') }}</label>
-            <input v-model.number="newSnapshot.expenses" type="number" min="0" class="block w-24 rounded-md border border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm" />
+            <input v-model.number="newSnapshot.expenses" type="number" min="0" class="block w-24 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.notes') }}</label>
-            <input v-model="newSnapshot.notes" type="text" class="block w-48 rounded-md border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm" />
+            <input v-model="newSnapshot.notes" type="text" class="block w-48 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
-          <button type="submit" class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50" :disabled="adding">{{ $t('snapshots.add') }}</button>
+          <button type="submit" class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50" :disabled="adding">{{ $t('snapshots.add') }}</button>
         </form>
       </div>
-      <div class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="border border-slate-200 bg-white">
         <h2 class="border-b border-slate-200 px-6 py-4 text-lg font-semibold text-slate-900">{{ $t('snapshots.history') }}</h2>
         <p v-if="loading" class="p-6 text-slate-600">{{ $t('snapshots.loading') }}</p>
         <div v-else class="overflow-x-auto">
@@ -47,13 +47,13 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 bg-white">
-              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-slate-50/50">
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700">{{ s.weekStartDate }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700">{{ s.pointsValue }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700">{{ s.expenses ?? '–' }}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">{{ s.notes || '–' }}</td>
+              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-whiteer/50">
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.weekStartDate }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.pointsValue }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.expenses ?? '–' }}</td>
+                <td class="px-4 py-3 text-sm text-slate-600">{{ s.notes || '–' }}</td>
                 <td class="whitespace-nowrap px-4 py-3">
-                  <button type="button" class="text-sm font-medium text-red-600 hover:text-red-700" @click="removeSnapshot(s)">{{ $t('snapshots.delete') }}</button>
+                  <button type="button" class="text-sm font-medium text-red-400 hover:text-red-300" @click="removeSnapshot(s)">{{ $t('snapshots.delete') }}</button>
                 </td>
               </tr>
             </tbody>

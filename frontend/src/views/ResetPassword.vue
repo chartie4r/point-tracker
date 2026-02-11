@@ -12,20 +12,20 @@
           required
           minlength="8"
           autocomplete="new-password"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
         <p class="mt-0.5 text-xs text-slate-500">{{ $t('auth.passwordMin') }}</p>
       </div>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <button
         type="submit"
-        class="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+        class="w-full border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
         :disabled="loading"
       >
         {{ loading ? $t('auth.loading') : $t('auth.resetPassword') }}
       </button>
     </form>
-    <div v-else class="mt-6 rounded-md bg-emerald-50 p-4 text-sm text-emerald-800">
+    <div v-else class="mt-6 border border-primary-500/30 bg-primary-500/10 p-4 text-sm text-primary-700">
       <p>{{ $t('auth.resetSuccess') }}</p>
       <router-link :to="user?.role === 'superadmin' ? '/available-cards' : '/cards'" class="mt-3 inline-block font-medium text-primary-600 hover:text-primary-700">{{ $t('auth.goToApp') }}</router-link>
     </div>
@@ -55,7 +55,7 @@ async function submit() {
     await fetchUser();
     success.value = true;
   } catch (e) {
-    error.value = e.response?.data?.error || e.message || 'Reset failed';
+    error.value = e.response?.data?.error || e.message || $t('auth.errorReset');
   } finally {
     loading.value = false;
   }

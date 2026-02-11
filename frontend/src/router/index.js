@@ -33,7 +33,8 @@ router.beforeEach(async (to) => {
   if (to.meta.guest && isLoggedIn && !['ResetPassword'].includes(to.name)) {
     return { path: isSuperadmin ? '/available-cards' : '/cards' };
   }
-  if (isLoggedIn && isSuperadmin && ['CardList', 'CardNew', 'CardEdit', 'CardSnapshots'].includes(to.name)) {
+  // Superadmin: cards list and edit go to catalogue; CardNew is allowed when adding from catalogue (prefill checked in component)
+  if (isLoggedIn && isSuperadmin && ['CardList', 'CardEdit', 'CardSnapshots'].includes(to.name)) {
     return { path: '/available-cards' };
   }
 });

@@ -73,10 +73,12 @@ model ScrapedCard {
   type            String   // VISA | MASTERCARD | AMEX
   bank            String   // AMEX | BMO | BNC | CIBC | RBC | Scotia | TD
   pointsType      String   @map("points_type") // Aeroplan | BNC | Marriott_Bonvoy | ...
-  annualCost      Int?     @map("annual_cost")
-  welcomeValueY1  Int?     @map("welcome_value_y1")
+  annualCost       Int?     @map("annual_cost")
+  welcomeValueY1   Int?     @map("welcome_value_y1")
   welcomeValueY2  Int?     @map("welcome_value_y2")
+  noWelcomeBonus   Boolean  @default(false) @map("no_welcome_bonus")
   minSpend        Int?     @map("min_spend")
+  minSpendNotes   String?  @map("min_spend_notes")
   bonusDetails    String?  @map("bonus_details")
   milesopediaUrl  String?  @map("milesopedia_url")
   milesopediaSlug String   @map("milesopedia_slug")

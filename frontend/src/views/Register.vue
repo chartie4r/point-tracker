@@ -11,7 +11,7 @@
           type="email"
           required
           autocomplete="email"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
       <div>
@@ -21,7 +21,7 @@
           v-model="name"
           type="text"
           autocomplete="name"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
       <div>
@@ -33,7 +33,7 @@
           required
           minlength="8"
           autocomplete="new-password"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
         <p class="mt-0.5 text-xs text-slate-500">{{ $t('auth.passwordMin') }}</p>
       </div>
@@ -41,7 +41,7 @@
       <div class="flex flex-col gap-3">
         <button
           type="submit"
-          class="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+          class="w-full border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
           :disabled="loading"
         >
           {{ loading ? $t('auth.loading') : $t('auth.register') }}
@@ -75,7 +75,7 @@ async function submit() {
     await register(email.value, password.value, name.value || undefined);
     router.replace('/');
   } catch (e) {
-    error.value = e.response?.data?.error || e.message || 'Registration failed';
+    error.value = e.response?.data?.error || e.message || $t('auth.errorRegister');
   } finally {
     loading.value = false;
   }

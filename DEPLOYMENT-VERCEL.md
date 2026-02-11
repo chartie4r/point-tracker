@@ -114,6 +114,7 @@ If you ever deploy the frontend elsewhere, set:
 - **API:** All `/api/*` requests are handled by the serverless function in `api/[[...path]].js`, which uses the Express app in `backend/src/app.js`.
 - **Database:** PostgreSQL on Neon; Prisma uses `backend/prisma/schema.postgres.prisma` for the Vercel build.
 - **Sessions:** Stored in signed cookies (no Redis), so they work in serverless.
+- **Catalog refresh (Milesopedia):** Runs with **fetch only** on Vercel (no Puppeteer). For best data accuracy, run the refresh **locally** with `SCRAPER_USE_PUPPETEER=true` in `backend/.env`, then deploy; or trigger refresh from a machine where Puppeteer can run.
 
 ### Local development
 

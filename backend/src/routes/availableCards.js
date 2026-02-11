@@ -16,7 +16,9 @@ function serialize(card) {
     annualCost: card.annualCost,
     welcomeValueY1: card.welcomeValueY1,
     welcomeValueY2: card.welcomeValueY2,
+    noWelcomeBonus: card.noWelcomeBonus === true,
     minSpend: card.minSpend,
+    minSpendNotes: card.minSpendNotes ?? null,
     bonusDetails: card.bonusDetails,
     milesopediaUrl: card.milesopediaUrl,
     milesopediaSlug: card.milesopediaSlug,
@@ -40,7 +42,8 @@ availableCardsRouter.get('/', async (req, res) => {
 
 availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) => {
   try {
-    console.log('[AvailableCards] POST /:id/refresh', req.params.id);
+    const useAi = req.query.useAi === 'true' || req.body?.useAi === true;
+    console.log('[AvailableCards] POST /:id/refresh', req.params.id, useAi ? '(AI)' : '');
     const existing = await prisma.scrapedCard.findUnique({
       where: { id: req.params.id },
     });
@@ -52,7 +55,7 @@ availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) =>
     }
 
     console.log('[AvailableCards] Fetching', existing.milesopediaUrl);
-    const scraped = await scrapeSingleMilesopediaCard(existing.milesopediaUrl);
+    const scraped = await scrapeSingleMilesopediaCard(existing.milesopediaUrl, { useAi });
     console.log('[AvailableCards] Parsed welcomeValueY1:', scraped.welcomeValueY1);
 
     const updated = await prisma.scrapedCard.update({
@@ -65,7 +68,9 @@ availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) =>
         annualCost: scraped.annualCost ?? null,
         welcomeValueY1: scraped.welcomeValueY1 ?? null,
         welcomeValueY2: scraped.welcomeValueY2 ?? null,
+        noWelcomeBonus: scraped.noWelcomeBonus === true,
         minSpend: scraped.minSpend ?? null,
+        minSpendNotes: scraped.minSpendNotes ?? null,
         bonusDetails: scraped.bonusDetails ?? null,
         milesopediaUrl: scraped.milesopediaUrl || existing.milesopediaUrl,
         milesopediaSlug: scraped.milesopediaSlug || existing.milesopediaSlug,

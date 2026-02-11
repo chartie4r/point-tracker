@@ -11,7 +11,7 @@
           v-model="form.email"
           type="email"
           required
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
       <div>
@@ -20,14 +20,14 @@
           id="profile-name"
           v-model="form.name"
           type="text"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
       <p v-if="profileError" class="text-sm text-red-600">{{ profileError }}</p>
-      <p v-if="profileSuccess" class="text-sm text-emerald-600">{{ profileSuccess }}</p>
+      <p v-if="profileSuccess" class="text-sm text-primary-600">{{ profileSuccess }}</p>
       <button
         type="submit"
-        class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+        class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
         :disabled="profileLoading"
       >
         {{ profileLoading ? $t('auth.loading') : $t('auth.saveProfile') }}
@@ -44,7 +44,7 @@
           v-model="passwordForm.currentPassword"
           type="password"
           required
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
       <div>
@@ -55,15 +55,15 @@
           type="password"
           required
           minlength="8"
-          class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
         <p class="mt-0.5 text-xs text-slate-500">{{ $t('auth.passwordMin') }}</p>
       </div>
       <p v-if="passwordError" class="text-sm text-red-600">{{ passwordError }}</p>
-      <p v-if="passwordSuccess" class="text-sm text-emerald-600">{{ passwordSuccess }}</p>
+      <p v-if="passwordSuccess" class="text-sm text-primary-600">{{ passwordSuccess }}</p>
       <button
         type="submit"
-        class="rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+        class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         :disabled="passwordLoading"
       >
         {{ passwordLoading ? $t('auth.loading') : $t('auth.changePassword') }}
@@ -104,9 +104,9 @@ async function saveProfile() {
   try {
     const u = await updateProfile(form.value);
     user.value = u;
-    profileSuccess.value = 'Profile updated.';
+    profileSuccess.value = $t('auth.profileUpdated');
   } catch (e) {
-    profileError.value = e.response?.data?.error || e.message || 'Update failed';
+    profileError.value = e.response?.data?.error || e.message || $t('auth.errorGeneric');
   } finally {
     profileLoading.value = false;
   }
@@ -118,10 +118,10 @@ async function savePassword() {
   passwordLoading.value = true;
   try {
     await changePassword(passwordForm.value.currentPassword, passwordForm.value.newPassword);
-    passwordSuccess.value = 'Password updated.';
+    passwordSuccess.value = $t('auth.passwordUpdated');
     passwordForm.value = { currentPassword: '', newPassword: '' };
   } catch (e) {
-    passwordError.value = e.response?.data?.error || e.message || 'Change failed';
+    passwordError.value = e.response?.data?.error || e.message || $t('auth.errorGeneric');
   } finally {
     passwordLoading.value = false;
   }

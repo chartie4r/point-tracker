@@ -107,8 +107,10 @@ export async function getAvailableCards() {
   return { cards: data.cards ?? data, lastRefreshedAt: data.lastRefreshedAt ?? null };
 }
 
-export async function refreshAvailableCard(id) {
-  const { data } = await api.post(`/api/available-cards/${id}/refresh`);
+/** useAi: when true, run Claude extraction for min spend / conditions. */
+export async function refreshAvailableCard(id, useAi = false) {
+  const url = useAi ? `/api/available-cards/${id}/refresh?useAi=true` : `/api/available-cards/${id}/refresh`;
+  const { data } = await api.post(url);
   return data;
 }
 
@@ -117,8 +119,9 @@ export async function refreshCardFromMilesopedia(id) {
   return data;
 }
 
-/** Fire-and-forget: starts catalog refresh, returns immediately with 202. */
-export async function scrapeMilesopedia() {
-  const { data, status } = await api.post('/api/scrape/milesopedia');
+/** Fire-and-forget: starts catalog refresh, returns immediately with 202. useAi: when true, runs Claude extraction (costs API calls). */
+export async function scrapeMilesopedia(useAi = false) {
+  const url = useAi ? '/api/scrape/milesopedia?useAi=true' : '/api/scrape/milesopedia';
+  const { data, status } = await api.post(url);
   return { accepted: status === 202, ...data };
 }
