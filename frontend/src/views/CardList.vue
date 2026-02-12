@@ -1,31 +1,25 @@
 <template>
   <div>
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <PageHeader>
       <h1 class="font-display text-2xl font-bold text-slate-900">{{ $t('cardList.title') }}</h1>
-      <div class="flex flex-wrap gap-2">
-        <select
+      <template #actions>
+        <AppSelect
           v-model="filterStatus"
-          class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        >
-          <option value="">{{ $t('cardList.allStatuses') }}</option>
-          <option v-for="s in CARD_STATUSES" :key="s.value" :value="s.value">{{ $t('status.' + s.value) }}</option>
-        </select>
-        <select
+          :options="statusOptions"
+          :placeholder="$t('cardList.allStatuses')"
+        />
+        <AppSelect
           v-model="filterBank"
-          class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        >
-          <option value="">{{ $t('cardList.allBanks') }}</option>
-          <option v-for="b in BANKS" :key="b" :value="b">{{ b }}</option>
-        </select>
-        <select
+          :options="bankOptions"
+          :placeholder="$t('cardList.allBanks')"
+        />
+        <AppSelect
           v-model="filterPointsType"
-          class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        >
-          <option value="">{{ $t('cardList.allPointTypes') }}</option>
-          <option v-for="p in POINTS_TYPES" :key="p" :value="p">{{ pointsTypeLabel(p) }}</option>
-        </select>
-      </div>
-    </div>
+          :options="pointsTypeOptions"
+          :placeholder="$t('cardList.allPointTypes')"
+        />
+      </template>
+    </PageHeader>
     <p v-if="loading" class="text-slate-600">{{ $t('cardList.loading') }}</p>
     <p v-else-if="error" class="text-red-600 text-sm">{{ error }}</p>
     <div v-else class="overflow-hidden border border-slate-200 bg-white">
@@ -73,15 +67,19 @@
         </tbody>
       </table>
     </div>
-    <p v-if="!loading && !error && filteredCards.length === 0" class="mt-4 text-slate-600">
-      {{ $t('cardList.noCards') }} <router-link to="/available-cards" class="font-semibold text-primary-600 hover:text-primary-700">{{ $t('cardList.addOne') }}</router-link>.
-    </p>
+    <EmptyState
+      v-if="!loading && !error && filteredCards.length === 0"
+      :title="$t('cardList.noCards')"
+      :message="$t('cardList.addOne')"
+      :action-label="$t('cardList.addOne')"
+      action-to="/available-cards"
+    />
     <div v-if="deleteTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" @click.self="deleteTarget = null">
       <div class="w-full max-w-sm border border-slate-200 bg-white p-6">
         <p class="text-slate-700">{{ $t('cardList.deleteConfirm', { name: deleteTarget.cardName }) }}</p>
         <div class="mt-4 flex justify-end gap-2">
-          <button type="button" class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition" @click="deleteTarget = null">{{ $t('cardList.cancel') }}</button>
-          <button type="button" class="bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition" @click="doDelete">{{ $t('cardList.delete') }}</button>
+          <AppButton variant="secondary" @click="deleteTarget = null">{{ $t('cardList.cancel') }}</AppButton>
+          <AppButton variant="danger" @click="doDelete">{{ $t('cardList.delete') }}</AppButton>
         </div>
       </div>
     </div>
@@ -95,6 +93,10 @@ import { getCards, deleteCard } from '../api/client';
 import { useI18n } from 'vue-i18n';
 import { CARD_STATUSES, BANKS, POINTS_TYPES, pointsTypeLabel } from '../constants';
 import BankLogo from '../components/BankLogo.vue';
+import PageHeader from '../components/PageHeader.vue';
+import AppSelect from '../components/AppSelect.vue';
+import EmptyState from '../components/EmptyState.vue';
+import AppButton from '../components/AppButton.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -105,6 +107,14 @@ const filterStatus = ref('');
 const filterBank = ref('');
 const filterPointsType = ref('');
 const deleteTarget = ref(null);
+
+const statusOptions = computed(() =>
+  CARD_STATUSES.map((s) => ({ value: s.value, label: t('status.' + s.value) }))
+);
+const bankOptions = computed(() => BANKS.map((b) => ({ value: b, label: b })));
+const pointsTypeOptions = computed(() =>
+  POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))
+);
 
 const filteredCards = computed(() => {
   let list = cards.value;

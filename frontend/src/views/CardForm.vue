@@ -1,50 +1,42 @@
 <template>
   <div class="max-w-2xl">
-    <div class="mb-6 flex items-center justify-between gap-4">
+    <PageHeader>
       <h1 class="font-display text-2xl font-bold text-slate-900">{{ id ? $t('cardForm.editCard') : $t('cardForm.newCard') }}</h1>
-      <button
-        v-if="id && canRefreshFromMilesopedia"
-        type="button"
-        class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-whiteer disabled:opacity-50 transition"
-        :disabled="refreshing"
-        @click="refreshFromMilesopedia"
-      >
-        {{ refreshing ? $t('cardForm.refreshingFromMilesopedia') : $t('cardForm.refreshFromMilesopedia') }}
-      </button>
-    </div>
+      <template #actions>
+        <AppButton
+          v-if="id && canRefreshFromMilesopedia"
+          type="button"
+          variant="outline"
+          size="sm"
+          :disabled="refreshing"
+          @click="refreshFromMilesopedia"
+        >
+          {{ refreshing ? $t('cardForm.refreshingFromMilesopedia') : $t('cardForm.refreshFromMilesopedia') }}
+        </AppButton>
+      </template>
+    </PageHeader>
     <p v-if="loadError" class="mb-4 text-sm text-red-600">{{ loadError }}</p>
     <form v-else @submit.prevent="submit" class="space-y-6">
       <div class="border border-slate-200 bg-white p-6">
-        <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.cardName') }}</label>
-        <input v-model="form.cardName" type="text" required class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+        <AppInput v-model="form.cardName" type="text" required>
+          {{ $t('cardForm.cardName') }}
+        </AppInput>
       </div>
       <div class="border border-slate-200 bg-white p-6">
         <h2 class="mb-4 font-display text-sm font-bold text-slate-900">Type &amp; statut</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.type') }}</label>
-            <select v-model="form.type" required class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-              <option v-for="t in CARD_TYPES" :key="t" :value="t">{{ t }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.status') }}</label>
-            <select v-model="form.status" required class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-              <option v-for="s in CARD_STATUSES" :key="s.value" :value="s.value">{{ $t('status.' + s.value) }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.pointsType') }}</label>
-            <select v-model="form.pointsType" required class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-              <option v-for="p in POINTS_TYPES" :key="p" :value="p">{{ pointsTypeLabel(p) }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.bank') }}</label>
-            <select v-model="form.bank" required class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-              <option v-for="b in BANKS" :key="b" :value="b">{{ b }}</option>
-            </select>
-          </div>
+          <AppSelect v-model="form.type" :options="typeOptions" required>
+            <template #label>{{ $t('cardForm.type') }}</template>
+          </AppSelect>
+          <AppSelect v-model="form.status" :options="statusOptions" required>
+            <template #label>{{ $t('cardForm.status') }}</template>
+          </AppSelect>
+          <AppSelect v-model="form.pointsType" :options="pointsTypeOptions" required>
+            <template #label>{{ $t('cardForm.pointsType') }}</template>
+          </AppSelect>
+          <AppSelect v-model="form.bank" :options="bankOptions" required>
+            <template #label>{{ $t('cardForm.bank') }}</template>
+          </AppSelect>
         </div>
       </div>
       <div class="border border-slate-200 bg-white p-6">
@@ -98,8 +90,8 @@
         <textarea v-model="form.pointsDetails" rows="3" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"></textarea>
       </div>
       <div class="flex gap-3">
-        <button type="button" class="border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-whiteer transition" @click="$router.push('/cards')">{{ $t('cardForm.cancel') }}</button>
-        <button type="submit" class="border-2 border-violet-500 bg-violet-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-50 transition" :disabled="saving">{{ id ? $t('cardForm.update') : $t('cardForm.create') }}</button>
+        <AppButton type="button" variant="secondary" size="md" @click="$router.push('/cards')">{{ $t('cardForm.cancel') }}</AppButton>
+        <AppButton type="submit" variant="primary" size="md" :disabled="saving">{{ id ? $t('cardForm.update') : $t('cardForm.create') }}</AppButton>
       </div>
     </form>
   </div>
@@ -108,9 +100,16 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
 import { getCard, createCard, updateCard, refreshCardFromMilesopedia } from '../api/client';
 import { CARD_TYPES, CARD_STATUSES, POINTS_TYPES, BANKS, pointsTypeLabel } from '../constants';
+import PageHeader from '../components/PageHeader.vue';
+import AppInput from '../components/AppInput.vue';
+import AppSelect from '../components/AppSelect.vue';
+import AppButton from '../components/AppButton.vue';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({ id: { type: String, default: null } });
 const route = useRoute();
@@ -211,6 +210,15 @@ async function submit() {
     saving.value = false;
   }
 }
+
+const typeOptions = computed(() => CARD_TYPES.map((t) => ({ value: t, label: t })));
+const statusOptions = computed(() =>
+  CARD_STATUSES.map((s) => ({ value: s.value, label: $t('status.' + s.value) }))
+);
+const pointsTypeOptions = computed(() =>
+  POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))
+);
+const bankOptions = computed(() => BANKS.map((b) => ({ value: b, label: b })));
 
 const canRefreshFromMilesopedia = computed(
   () => !!form.milesopediaUrl || !!form.milesopediaSlug,

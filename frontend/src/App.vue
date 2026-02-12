@@ -29,21 +29,18 @@
               v-if="!isSuperadmin"
               to="/cards"
               class="border-b-2 border-transparent pb-1 text-slate-600 hover:text-slate-900 hover:border-slate-300"
-              active-class="text-primary-600 border-primary-500"
             >
               {{ $t('nav.myCards') }}
             </router-link>
             <router-link
               to="/available-cards"
               class="border-b-2 border-transparent pb-1 text-slate-600 hover:text-slate-900 hover:border-slate-300"
-              active-class="text-primary-600 border-primary-500"
             >
               {{ $t('nav.availableCards') }}
             </router-link>
             <router-link
               to="/profile"
               class="border-b-2 border-transparent pb-1 text-slate-600 hover:text-slate-900 hover:border-slate-300"
-              active-class="text-primary-600 border-primary-500"
             >
               {{ $t('nav.profile') }}
             </router-link>
@@ -65,28 +62,17 @@
 
           <!-- Auth actions -->
           <template v-if="isAuthenticated">
-            <button
-              type="button"
-              class="text-sm font-medium text-slate-500 hover:text-slate-900 transition"
-              @click="handleLogout"
-            >
+            <AppButton variant="outline" size="sm" @click="handleLogout">
               {{ $t('auth.logout') }}
-            </button>
+            </AppButton>
           </template>
           <template v-else>
-            <router-link
-              to="/login"
-              class="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-              active-class="text-primary-600"
-            >
+            <AppButton to="/login" variant="outline" size="sm">
               {{ $t('auth.login') }}
-            </router-link>
-            <router-link
-              to="/register"
-              class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-600"
-            >
+            </AppButton>
+            <AppButton to="/register" variant="primary" size="md">
               {{ $t('auth.registerLink') }}
-            </router-link>
+            </AppButton>
           </template>
         </div>
       </nav>
@@ -102,6 +88,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from './composables/useAuth';
+import AppButton from './components/AppButton.vue';
 import logoUrl from './assets/logo-rocket.png';
 
 const router = useRouter();
@@ -120,9 +107,3 @@ async function handleLogout() {
 }
 </script>
 
-<style>
-/* Vue Router link active class */
-a.router-link-active.router-link-exact-active {
-  @apply text-primary-600;
-}
-</style>

@@ -1,53 +1,48 @@
 <template>
   <div class="w-full">
-    <h1 class="font-display text-2xl font-bold text-slate-900">{{ $t('availableCards.title') }}</h1>
-    <p class="mt-1 text-slate-600">{{ $t('availableCards.intro') }}</p>
-    <div v-if="isSuperadmin" class="mt-4 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        class="border-2 border-violet-500 bg-violet-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-50 transition"
-        :disabled="refreshing || loading"
-        @click="refreshCatalog(false)"
-      >
-        {{ refreshing ? $t('availableCards.refreshingFromMilesopedia') : $t('availableCards.refreshFromMilesopedia') }}
-      </button>
-      <button
-        type="button"
-        class="border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
-        :disabled="refreshing || loading"
-        @click="refreshCatalog(true)"
-      >
-        {{ refreshing ? $t('availableCards.refreshingWithAi') : $t('availableCards.refreshWithAi') }}
-      </button>
-      <span v-if="lastRefreshedAt" class="text-sm text-slate-500">{{ $t('availableCards.lastRefreshed') }}: {{ formatDate(lastRefreshedAt) }}</span>
-      <p v-if="refreshStartedMessage" class="w-full text-sm text-primary-600">{{ refreshStartedMessage }}</p>
-    </div>
-    <div v-else-if="lastRefreshedAt" class="mt-4 text-sm text-slate-500">{{ $t('availableCards.lastRefreshed') }}: {{ formatDate(lastRefreshedAt) }}</div>
+    <PageHeader>
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-900">{{ $t('availableCards.title') }}</h1>
+        <p class="mt-1 text-slate-600">{{ $t('availableCards.intro') }}</p>
+      </div>
+      <template #actions>
+        <template v-if="isSuperadmin">
+          <AppButton
+            type="button"
+            variant="primary"
+            size="md"
+            :disabled="refreshing || loading"
+            @click="refreshCatalog(false)"
+          >
+            {{ refreshing ? $t('availableCards.refreshingFromMilesopedia') : $t('availableCards.refreshFromMilesopedia') }}
+          </AppButton>
+          <AppButton
+            type="button"
+            variant="secondary"
+            size="md"
+            :disabled="refreshing || loading"
+            @click="refreshCatalog(true)"
+          >
+            {{ refreshing ? $t('availableCards.refreshingWithAi') : $t('availableCards.refreshWithAi') }}
+          </AppButton>
+          <span v-if="lastRefreshedAt" class="text-sm text-slate-500">{{ $t('availableCards.lastRefreshed') }}: {{ formatDate(lastRefreshedAt) }}</span>
+        </template>
+        <span v-else-if="lastRefreshedAt" class="text-sm text-slate-500">{{ $t('availableCards.lastRefreshed') }}: {{ formatDate(lastRefreshedAt) }}</span>
+      </template>
+    </PageHeader>
+    <p v-if="refreshStartedMessage" class="text-sm text-primary-600">{{ refreshStartedMessage }}</p>
     <p v-if="loading" class="mt-4 text-slate-600">{{ $t('availableCards.loading') }}</p>
     <p v-else-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
     <div v-else class="mt-4 flex flex-wrap items-center gap-2">
-      <select v-model="filterBank" class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-        <option value="">{{ $t('availableCards.allBanks') }}</option>
-        <option v-for="b in BANKS" :key="b" :value="b">{{ b }}</option>
-      </select>
-      <select v-model="filterType" class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-        <option value="">{{ $t('availableCards.allTypes') }}</option>
-        <option v-for="t in CARD_TYPES" :key="t" :value="t">{{ t }}</option>
-      </select>
-      <select v-model="filterPointsType" class="border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-        <option value="">{{ $t('availableCards.allPointTypes') }}</option>
-        <option v-for="p in POINTS_TYPES" :key="p" :value="p">{{ pointsTypeLabel(p) }}</option>
-      </select>
+      <AppSelect v-model="filterBank" :options="bankOptions" />
+      <AppSelect v-model="filterType" :options="typeOptions" />
+      <AppSelect v-model="filterPointsType" :options="pointsTypeOptions" />
       <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
         <input v-model="filterNoAnnualCost" type="checkbox" class="border-slate-300 text-primary-500 focus:ring-primary-500" />
         {{ $t('availableCards.noAnnualCost') }}
       </label>
       <span class="text-sm text-slate-500">{{ $t('availableCards.sortBy') }}</span>
-      <select v-model="sortOrder" class="min-w-[12rem] border border-slate-200 bg-white py-1.5 pl-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-        <option value="">{{ $t('availableCards.sortByName') }}</option>
-        <option value="valueY1Desc">{{ $t('availableCards.sortByValueY1Desc') }}</option>
-        <option value="valueY1Asc">{{ $t('availableCards.sortByValueY1Asc') }}</option>
-      </select>
+      <AppSelect v-model="sortOrder" :options="sortOptions" class="min-w-[12rem]" />
     </div>
     <ul v-if="!loading && !error" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <li v-for="card in pagedCards" :key="cardKey(card)" class="group flex flex-col border border-slate-200 bg-white p-5 transition hover:border-primary-200">
@@ -63,24 +58,24 @@
           <span v-if="card.annualCost != null" class="text-slate-600">{{ $t('availableCards.annualCost') }}: ${{ card.annualCost }} {{ $t('availableCards.perYear') }}</span>
         </div>
         <div class="mt-auto flex flex-wrap gap-2 pt-3">
-          <router-link :to="{ name: 'CardNew', state: { prefill: toPrefill(card) } }" class="border-2 border-violet-500 bg-violet-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-violet-600 transition">
+          <AppButton :to="{ name: 'CardNew', state: { prefill: toPrefill(card) } }" variant="primary" size="sm">
             {{ $t('availableCards.addToMyCards') }}
-          </router-link>
-          <button type="button" class="border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition" @click="showDetails(card)">{{ $t('availableCards.details') }}</button>
-          <button v-if="isSuperadmin" type="button" class="border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, false)">
+          </AppButton>
+          <AppButton type="button" variant="outline" size="sm" @click="showDetails(card)">{{ $t('availableCards.details') }}</AppButton>
+          <AppButton v-if="isSuperadmin" type="button" variant="outline" size="sm" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, false)">
             {{ rowRefreshingId === card.id ? $t('availableCards.refreshing') : $t('availableCards.refresh') }}
-          </button>
-          <button v-if="isSuperadmin" type="button" class="border-2 border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-100 disabled:opacity-50 transition" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, true)">
+          </AppButton>
+          <AppButton v-if="isSuperadmin" type="button" variant="outline" size="sm" class="border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, true)">
             {{ rowRefreshingId === card.id ? $t('availableCards.refreshingWithAi') : $t('availableCards.refreshOneWithAi') }}
-          </button>
+          </AppButton>
         </div>
       </li>
     </ul>
-    <p v-if="!loading && !error && sortedFilteredCards.length === 0" class="mt-4 text-slate-600">{{ $t('availableCards.noMatch') }}</p>
+    <EmptyState v-if="!loading && !error && sortedFilteredCards.length === 0" :title="$t('availableCards.noMatch')" />
     <div v-if="totalPages > 1 && !loading && !error && sortedFilteredCards.length > 0" class="mt-6 flex items-center justify-center gap-3">
-      <button type="button" class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition" :disabled="page === 1" @click="page--">{{ $t('availableCards.prev') }}</button>
+      <AppButton type="button" variant="outline" size="sm" :disabled="page === 1" @click="page--">{{ $t('availableCards.prev') }}</AppButton>
       <span class="text-sm text-slate-500">{{ $t('availableCards.page') }} {{ page }} / {{ totalPages }}</span>
-      <button type="button" class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition" :disabled="page === totalPages" @click="page++">{{ $t('availableCards.next') }}</button>
+      <AppButton type="button" variant="outline" size="sm" :disabled="page === totalPages" @click="page++">{{ $t('availableCards.next') }}</AppButton>
     </div>
     <div v-if="selectedCard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" @click.self="closeDetails">
       <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-slate-200 bg-white p-6">
@@ -99,8 +94,8 @@
           <div v-if="selectedCard.milesopediaUrl"><dt class="font-medium text-slate-500">Milesopedia</dt><dd><a :href="selectedCard.milesopediaUrl" target="_blank" rel="noopener noreferrer" class="font-semibold text-primary-600 hover:text-primary-700 underline">{{ $t('availableCards.openCardPage') }}</a></dd></div>
         </dl>
         <div class="mt-6 flex justify-end gap-2">
-          <button type="button" class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition" @click="closeDetails">{{ $t('availableCards.close') }}</button>
-          <router-link :to="{ name: 'CardNew', state: { prefill: toPrefill(selectedCard) } }" class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-600 transition" @click.native="closeDetails">{{ $t('availableCards.addToMyCards') }}</router-link>
+          <AppButton type="button" variant="secondary" size="md" @click="closeDetails">{{ $t('availableCards.close') }}</AppButton>
+          <AppButton type="button" variant="primary" size="md" @click="goAddAndClose">{{ $t('availableCards.addToMyCards') }}</AppButton>
         </div>
       </div>
     </div>
@@ -110,15 +105,30 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
 import { getAvailableCards, scrapeMilesopedia, refreshAvailableCard } from '../api/client';
 import { CARD_TYPES, BANKS, POINTS_TYPES, pointsTypeLabel } from '../constants';
+import PageHeader from '../components/PageHeader.vue';
+import AppSelect from '../components/AppSelect.vue';
+import AppButton from '../components/AppButton.vue';
+import EmptyState from '../components/EmptyState.vue';
 import CardNetworkLogo from '../components/CardNetworkLogo.vue';
 import BankLogo from '../components/BankLogo.vue';
 
 const route = useRoute();
 const router = useRouter();
+const { t: $t } = useI18n();
 const { isSuperadmin } = useAuth();
+
+const bankOptions = computed(() => [{ value: '', label: $t('availableCards.allBanks') }, ...BANKS.map((b) => ({ value: b, label: b }))]);
+const typeOptions = computed(() => [{ value: '', label: $t('availableCards.allTypes') }, ...CARD_TYPES.map((t) => ({ value: t, label: t }))]);
+const pointsTypeOptions = computed(() => [{ value: '', label: $t('availableCards.allPointTypes') }, ...POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))]);
+const sortOptions = computed(() => [
+  { value: '', label: $t('availableCards.sortByName') },
+  { value: 'valueY1Desc', label: $t('availableCards.sortByValueY1Desc') },
+  { value: 'valueY1Asc', label: $t('availableCards.sortByValueY1Asc') },
+]);
 
 const loading = ref(true);
 const error = ref(null);
@@ -250,6 +260,12 @@ function showDetails(card) {
 
 function closeDetails() {
   selectedCard.value = null;
+}
+
+function goAddAndClose() {
+  const prefill = selectedCard.value ? toPrefill(selectedCard.value) : null;
+  closeDetails();
+  router.push({ name: 'CardNew', state: { prefill } });
 }
 
 async function loadCatalog() {

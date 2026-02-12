@@ -10,6 +10,7 @@ Epics respect the implementation order and dependencies from [IMPLEMENTATION-ORD
 
 | Epic | Name | Features | Scope for one agent |
 |------|------|----------|---------------------|
+| **E0** | **Reusable components & refactor** | — | **Prerequisite.** Refactor frontend into reusable components; no new features. |
 | E1 | Notifications foundation | 1 | Notification center only |
 | E2 | Alerts & reminders | 2, 8 | Expiry alerts + churn reminder |
 | E3 | Import/export | 3, 4 | Export CSV/PDF + CSV import |
@@ -29,6 +30,15 @@ Epics respect the implementation order and dependencies from [IMPLEMENTATION-ORD
 ---
 
 ## Epic definitions (scope for one agent)
+
+### E0 – Reusable components & refactor
+- **Features:** None (infrastructure only).
+- **In scope:** Refactor the frontend so that E1–E15 can build on reusable components. Introduce and use the building blocks described in [REUSABLE-COMPONENTS.md](REUSABLE-COMPONENTS.md): **MetricTile**, **ContentCard**, **Panel**, **ProgressBar**, **Badge**, **Button**, **Form controls** (Select, Input, Label), **EmptyState**, **PageHeader** (or equivalent). Apply them where low-risk (e.g. Home tiles, CardList filters, one empty state). Keep and reuse **BankLogo**, **CardNetworkLogo**. Document in `REUSABLE-COMPONENTS.md` or `frontend/src/components/README.md` which component to use for which pattern.
+- **Out of scope:** New product features; new backend/API; full design system (tokens, dark mode); rewriting every view in one pass.
+- **Deliverables:** New shared components in `frontend/src/components/`; refactor of at least 2–3 existing views or sections to use them; short component-usage doc. Optional: unit tests for presentational components.
+- **Depends on:** None. Do E0 first so E1–E15 can use the same primitives.
+
+---
 
 ### E1 – Notifications foundation
 - **Features:** 1 (In-app notification center)

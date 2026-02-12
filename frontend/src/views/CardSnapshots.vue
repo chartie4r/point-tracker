@@ -6,7 +6,9 @@
         <template v-if="card">{{ card.cardName }} – {{ $t('snapshots.title') }}</template>
         <template v-else>{{ $t('snapshots.titleShort') }}</template>
       </h1>
-      <router-link v-if="card" :to="`/cards/${card.id}`" class="border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-whiteer">{{ $t('snapshots.editCard') }}</router-link>
+      <AppButton v-if="card" :to="`/cards/${card.id}`" variant="outline" size="sm">
+        {{ $t('snapshots.editCard') }}
+      </AppButton>
     </div>
     <p v-if="loadError" class="mb-4 text-sm text-red-400">{{ loadError }}</p>
     <template v-else-if="card">
@@ -14,27 +16,49 @@
         <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $t('snapshots.addSnapshot') }}</h2>
         <form @submit.prevent="addSnapshot" class="flex flex-wrap items-end gap-4">
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.weekStart') }}</label>
-            <input v-model="newSnapshot.weekStartDate" type="date" required class="block border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <AppInput v-model="newSnapshot.weekStartDate" type="date" required>
+              {{ $t('snapshots.weekStart') }}
+            </AppInput>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.pointsValue') }}</label>
-            <input v-model.number="newSnapshot.pointsValue" type="number" min="0" required class="block w-24 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <AppInput
+              :model-value="String(newSnapshot.pointsValue ?? '')"
+              type="number"
+              min="0"
+              required
+              @update:model-value="newSnapshot.pointsValue = parseInt($event, 10) || 0"
+            >
+              {{ $t('snapshots.pointsValue') }}
+            </AppInput>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.expenses') }}</label>
-            <input v-model.number="newSnapshot.expenses" type="number" min="0" class="block w-24 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <AppInput
+              :model-value="newSnapshot.expenses != null ? String(newSnapshot.expenses) : ''"
+              type="number"
+              min="0"
+              @update:model-value="newSnapshot.expenses = $event === '' ? null : parseInt($event, 10) || 0"
+            >
+              {{ $t('snapshots.expenses') }}
+            </AppInput>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('snapshots.notes') }}</label>
-            <input v-model="newSnapshot.notes" type="text" class="block w-48 border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <AppInput v-model="newSnapshot.notes" type="text">
+              {{ $t('snapshots.notes') }}
+            </AppInput>
           </div>
-          <button type="submit" class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50" :disabled="adding">{{ $t('snapshots.add') }}</button>
+          <AppButton type="submit" variant="primary" size="md" :disabled="adding">
+            {{ $t('snapshots.add') }}
+          </AppButton>
         </form>
       </div>
-      <div class="border border-slate-200 bg-white">
-        <h2 class="border-b border-slate-200 px-6 py-4 text-lg font-semibold text-slate-900">{{ $t('snapshots.history') }}</h2>
-        <p v-if="loading" class="p-6 text-slate-600">{{ $t('snapshots.loading') }}</p>
+      <Panel :title="$t('snapshots.history')">
+        <p v-if="loading" class="text-slate-600">{{ $t('snapshots.loading') }}</p>
+        <template v-else-if="snapshots.length === 0">
+          <EmptyState
+            :title="$t('snapshots.noSnapshots')"
+            :message="$t('snapshots.noSnapshots')"
+          />
+        </template>
         <div v-else class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
@@ -47,7 +71,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 bg-white">
-              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-whiteer/50">
+              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-slate-50/50">
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.weekStartDate }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.pointsValue }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.expenses ?? '–' }}</td>
@@ -59,8 +83,7 @@
             </tbody>
           </table>
         </div>
-        <p v-if="!loading && snapshots.length === 0" class="p-6 text-slate-600">{{ $t('snapshots.noSnapshots') }}</p>
-      </div>
+      </Panel>
     </template>
   </div>
 </template>
@@ -70,6 +93,10 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { getCard, getSnapshots, createSnapshot, deleteSnapshot } from '../api/client';
+import AppButton from '../components/AppButton.vue';
+import AppInput from '../components/AppInput.vue';
+import Panel from '../components/Panel.vue';
+import EmptyState from '../components/EmptyState.vue';
 
 const { t: $t } = useI18n();
 

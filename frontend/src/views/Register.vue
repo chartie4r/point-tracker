@@ -3,52 +3,34 @@
     <h1 class="text-2xl font-semibold text-slate-900">{{ $t('auth.registerTitle') }}</h1>
     <p class="mt-1 text-slate-600">{{ $t('auth.registerIntro') }}</p>
     <form class="mt-6 space-y-4" @submit.prevent="submit">
+      <AppInput v-model="email" type="email" required autocomplete="email">
+        {{ $t('auth.email') }}
+      </AppInput>
+      <AppInput v-model="name" type="text" autocomplete="name">
+        {{ $t('auth.name') }}
+      </AppInput>
       <div>
-        <label for="email" class="block text-sm font-medium text-slate-700">{{ $t('auth.email') }}</label>
-        <input
-          id="email"
-          v-model="email"
-          type="email"
-          required
-          autocomplete="email"
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
-      <div>
-        <label for="name" class="block text-sm font-medium text-slate-700">{{ $t('auth.name') }}</label>
-        <input
-          id="name"
-          v-model="name"
-          type="text"
-          autocomplete="name"
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
-      <div>
-        <label for="password" class="block text-sm font-medium text-slate-700">{{ $t('auth.password') }}</label>
-        <input
-          id="password"
+        <AppInput
           v-model="password"
           type="password"
           required
           minlength="8"
           autocomplete="new-password"
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
+        >
+          {{ $t('auth.password') }}
+        </AppInput>
         <p class="mt-0.5 text-xs text-slate-500">{{ $t('auth.passwordMin') }}</p>
       </div>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <div class="flex flex-col gap-3">
-        <button
-          type="submit"
-          class="w-full border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
-          :disabled="loading"
-        >
+        <AppButton type="submit" variant="primary" size="md" class="w-full" :disabled="loading">
           {{ loading ? $t('auth.loading') : $t('auth.register') }}
-        </button>
+        </AppButton>
         <p class="text-center text-sm text-slate-600">
           {{ $t('auth.hasAccount') }}
-          <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-700">{{ $t('auth.loginLink') }}</router-link>
+          <AppButton to="/login" variant="outline" size="sm" class="inline-flex font-medium">
+            {{ $t('auth.loginLink') }}
+          </AppButton>
         </p>
       </div>
     </form>
@@ -58,9 +40,13 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
+import AppInput from '../components/AppInput.vue';
+import AppButton from '../components/AppButton.vue';
 
 const router = useRouter();
+const { t: $t } = useI18n();
 const { register } = useAuth();
 const email = ref('');
 const name = ref('');

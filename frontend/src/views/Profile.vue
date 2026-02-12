@@ -4,79 +4,54 @@
     <p class="mt-1 text-slate-600">{{ $t('auth.profileIntro') }}</p>
 
     <form class="mt-6 space-y-4" @submit.prevent="saveProfile">
-      <div>
-        <label for="profile-email" class="block text-sm font-medium text-slate-700">{{ $t('auth.email') }}</label>
-        <input
-          id="profile-email"
-          v-model="form.email"
-          type="email"
-          required
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
-      <div>
-        <label for="profile-name" class="block text-sm font-medium text-slate-700">{{ $t('auth.name') }}</label>
-        <input
-          id="profile-name"
-          v-model="form.name"
-          type="text"
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
+      <AppInput v-model="form.email" type="email" required>
+        {{ $t('auth.email') }}
+      </AppInput>
+      <AppInput v-model="form.name" type="text">
+        {{ $t('auth.name') }}
+      </AppInput>
       <p v-if="profileError" class="text-sm text-red-600">{{ profileError }}</p>
       <p v-if="profileSuccess" class="text-sm text-primary-600">{{ profileSuccess }}</p>
-      <button
-        type="submit"
-        class="border-2 border-violet-500 bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
-        :disabled="profileLoading"
-      >
+      <AppButton type="submit" variant="primary" size="md" :disabled="profileLoading">
         {{ profileLoading ? $t('auth.loading') : $t('auth.saveProfile') }}
-      </button>
+      </AppButton>
     </form>
 
     <hr class="my-8 border-slate-200" />
     <h2 class="text-lg font-medium text-slate-900">{{ $t('auth.changePasswordTitle') }}</h2>
     <form class="mt-4 space-y-4" @submit.prevent="savePassword">
+      <AppInput v-model="passwordForm.currentPassword" type="password" required>
+        {{ $t('auth.currentPassword') }}
+      </AppInput>
       <div>
-        <label for="current-password" class="block text-sm font-medium text-slate-700">{{ $t('auth.currentPassword') }}</label>
-        <input
-          id="current-password"
-          v-model="passwordForm.currentPassword"
-          type="password"
-          required
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
-      <div>
-        <label for="new-password" class="block text-sm font-medium text-slate-700">{{ $t('auth.newPassword') }}</label>
-        <input
-          id="new-password"
+        <AppInput
           v-model="passwordForm.newPassword"
           type="password"
           required
           minlength="8"
-          class="mt-1 block w-full border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-        />
+        >
+          {{ $t('auth.newPassword') }}
+        </AppInput>
         <p class="mt-0.5 text-xs text-slate-500">{{ $t('auth.passwordMin') }}</p>
       </div>
       <p v-if="passwordError" class="text-sm text-red-600">{{ passwordError }}</p>
       <p v-if="passwordSuccess" class="text-sm text-primary-600">{{ passwordSuccess }}</p>
-      <button
-        type="submit"
-        class="border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        :disabled="passwordLoading"
-      >
+      <AppButton type="submit" variant="secondary" size="md" :disabled="passwordLoading">
         {{ passwordLoading ? $t('auth.loading') : $t('auth.changePassword') }}
-      </button>
+      </AppButton>
     </form>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
 import { updateProfile, changePassword } from '../api/client';
+import AppInput from '../components/AppInput.vue';
+import AppButton from '../components/AppButton.vue';
 
+const { t: $t } = useI18n();
 const { user } = useAuth();
 const form = ref({ email: '', name: '' });
 const profileError = ref('');

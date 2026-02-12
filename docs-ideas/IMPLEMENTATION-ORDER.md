@@ -4,6 +4,8 @@ This document orders the feature ideas (functional + UX) in a recommended sequen
 
 **For single-agent scoping:** see [BACKLOG-BY-EPIC.md](BACKLOG-BY-EPIC.md), which groups these ideas into epics sized for one agent session each.
 
+**Optional first step — Epic 0:** Before feature epics (E1–E15), run [E0 – Reusable components & refactor](BACKLOG-BY-EPIC.md) to refactor the frontend into reusable components (tiles, cards, panels, progress bars, badges, form controls, empty states). See [REUSABLE-COMPONENTS.md](REUSABLE-COMPONENTS.md) for the component map derived from the backlog.
+
 ---
 
 ## Order (1 → 28)

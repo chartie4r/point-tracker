@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createRouter, createMemoryHistory } from 'vue-router';
+import { i18n } from '../i18n';
 import AvailableCardsList from './AvailableCardsList.vue';
 import { CARD_FIXTURES } from '../../../test/cardFixtures.js';
 
@@ -27,11 +28,14 @@ async function createWrapper() {
   await router.push('/available-cards');
   return mount(AvailableCardsList, {
     global: {
-      plugins: [router],
-      stubs: { CardNetworkLogo: true },
-      mocks: {
-        $t: (key) => key,
-        $i18n: { locale: 'en' },
+      plugins: [router, i18n],
+      stubs: {
+        CardNetworkLogo: true,
+        BankLogo: true,
+        PageHeader: true,
+        AppSelect: true,
+        AppButton: true,
+        EmptyState: true,
       },
     },
   });
@@ -59,7 +63,7 @@ describe('AvailableCardsList', () => {
   it('shows filter controls', async () => {
     const wrapper = await createWrapper();
     await flushPromises();
-    const selects = wrapper.findAll('select');
-    expect(selects.length).toBeGreaterThanOrEqual(3);
+    const filterSelects = wrapper.findAllComponents({ name: 'AppSelect' });
+    expect(filterSelects.length).toBeGreaterThanOrEqual(3);
   });
 });
