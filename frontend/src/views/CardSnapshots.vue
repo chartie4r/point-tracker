@@ -1,19 +1,25 @@
 <template>
   <div>
-    <div class="mb-6 flex flex-wrap items-center gap-4">
-      <router-link to="/cards" class="text-sm font-medium text-primary-600 hover:text-primary-700">← {{ $t('snapshots.backToCards') }}</router-link>
-      <h1 class="text-2xl font-semibold text-slate-900">
-        <template v-if="card">{{ card.cardName }} – {{ $t('snapshots.title') }}</template>
-        <template v-else>{{ $t('snapshots.titleShort') }}</template>
-      </h1>
-      <AppButton v-if="card" :to="`/cards/${card.id}`" variant="outline" size="sm">
-        {{ $t('snapshots.editCard') }}
-      </AppButton>
-    </div>
+    <PageHeader>
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-900">
+          <template v-if="card">{{ card.cardName }} – {{ $t('snapshots.title') }}</template>
+          <template v-else>{{ $t('snapshots.titleShort') }}</template>
+        </h1>
+      </div>
+      <template #actions>
+        <AppButton to="/cards" variant="outline" size="sm">← {{ $t('snapshots.backToCards') }}</AppButton>
+        <AppButton v-if="card" :to="`/cards/${card.id}`" variant="outline" size="sm">
+          {{ $t('snapshots.editCard') }}
+        </AppButton>
+      </template>
+    </PageHeader>
     <p v-if="loadError" class="mb-4 text-sm text-red-400">{{ loadError }}</p>
     <template v-else-if="card">
-      <div class="mb-6 border border-slate-200 bg-white p-6">
-        <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $t('snapshots.addSnapshot') }}</h2>
+      <ContentCard class="mb-6" padding="md">
+        <template #header>
+          <h2 class="text-lg font-semibold text-slate-900">{{ $t('snapshots.addSnapshot') }}</h2>
+        </template>
         <form @submit.prevent="addSnapshot" class="flex flex-wrap items-end gap-4">
           <div>
             <AppInput v-model="newSnapshot.weekStartDate" type="date" required>
@@ -50,7 +56,7 @@
             {{ $t('snapshots.add') }}
           </AppButton>
         </form>
-      </div>
+      </ContentCard>
       <Panel :title="$t('snapshots.history')">
         <p v-if="loading" class="text-slate-600">{{ $t('snapshots.loading') }}</p>
         <template v-else-if="snapshots.length === 0">
@@ -77,7 +83,7 @@
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.expenses ?? '–' }}</td>
                 <td class="px-4 py-3 text-sm text-slate-600">{{ s.notes || '–' }}</td>
                 <td class="whitespace-nowrap px-4 py-3">
-                  <button type="button" class="text-sm font-medium text-red-400 hover:text-red-300" @click="removeSnapshot(s)">{{ $t('snapshots.delete') }}</button>
+                  <AppButton type="button" variant="danger" size="sm" @click="removeSnapshot(s)">{{ $t('snapshots.delete') }}</AppButton>
                 </td>
               </tr>
             </tbody>
@@ -93,6 +99,8 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { getCard, getSnapshots, createSnapshot, deleteSnapshot } from '../api/client';
+import PageHeader from '../components/PageHeader.vue';
+import ContentCard from '../components/ContentCard.vue';
 import AppButton from '../components/AppButton.vue';
 import AppInput from '../components/AppInput.vue';
 import Panel from '../components/Panel.vue';

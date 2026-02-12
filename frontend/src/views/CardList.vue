@@ -59,8 +59,8 @@
             </td>
             <td class="whitespace-nowrap px-4 py-3">
               <div class="flex gap-2">
-                <router-link :to="`/cards/${card.id}/snapshots`" class="border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">{{ $t('cardList.snapshots') }}</router-link>
-                <button type="button" class="border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition" @click="confirmDelete(card)">{{ $t('cardList.delete') }}</button>
+                <AppButton :to="`/cards/${card.id}/snapshots`" variant="outline" size="sm">{{ $t('cardList.snapshots') }}</AppButton>
+                <AppButton type="button" variant="danger" size="sm" @click="confirmDelete(card)">{{ $t('cardList.delete') }}</AppButton>
               </div>
             </td>
           </tr>

@@ -16,7 +16,7 @@
         </AppButton>
       </div>
     </form>
-    <ContentCard v-else padding="md" class="mt-6 border-primary-500/30 bg-primary-500/10">
+    <ContentCard v-else padding="md" variant="success" class="mt-6">
       <p class="text-sm text-primary-700">{{ $t('auth.resetLinkSent') }}</p>
       <p v-if="resetUrl" class="mt-2 break-all font-mono text-xs text-slate-600">{{ resetUrl }}</p>
       <AppButton to="/login" variant="outline" size="sm" class="mt-3">

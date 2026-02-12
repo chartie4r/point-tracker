@@ -20,7 +20,7 @@
         {{ loading ? $t('auth.loading') : $t('auth.resetPassword') }}
       </AppButton>
     </form>
-    <ContentCard v-else padding="md" class="mt-6 border-primary-500/30 bg-primary-500/10">
+    <ContentCard v-else padding="md" variant="success" class="mt-6">
       <p class="text-sm text-primary-700">{{ $t('auth.resetSuccess') }}</p>
       <AppButton :to="user?.role === 'superadmin' ? '/available-cards' : '/cards'" variant="outline" size="sm" class="mt-3">
         {{ $t('auth.goToApp') }}
