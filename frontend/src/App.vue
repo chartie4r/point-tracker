@@ -105,6 +105,24 @@
     <main class="flex-1 mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 dark:bg-slate-900">
       <router-view />
     </main>
+    <footer class="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+      <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <nav class="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm" aria-label="Footer">
+          <router-link to="/privacy" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+            {{ $t('app.footerPrivacy') }}
+          </router-link>
+          <router-link to="/terms" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+            {{ $t('app.footerTerms') }}
+          </router-link>
+        </nav>
+        <p class="mt-3 text-center text-sm text-slate-500 dark:text-slate-400">
+          {{ $t('app.footerCopyright', { year: new Date().getFullYear() }) }}
+        </p>
+        <p class="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">
+          {{ $t('app.footerMadeWith') }}
+        </p>
+      </div>
+    </footer>
   </div>
 </template>
 

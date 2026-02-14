@@ -6,6 +6,7 @@
     <select
       :id="selectId"
       :value="modelValue"
+      :disabled="disabled"
       class="border bg-white dark:bg-slate-800 py-1.5 pl-2 pr-8 text-sm text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:focus:border-violet-500 dark:focus:ring-violet-500 disabled:opacity-50"
       :class="selectClasses"
       @change="$emit('update:modelValue', $event.target.value)"
@@ -35,6 +36,7 @@ const props = defineProps({
   options: { type: Array, default: null },
   placeholder: { type: String, default: '' },
   error: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
 });
 
 defineEmits(['update:modelValue']);

@@ -22,7 +22,7 @@
           {{ $t('cardForm.cardName') }}
         </AppInput>
       </div>
-      <div class="border border-slate-200 bg-white p-6">
+      <div v-if="id" class="border border-slate-200 bg-white p-6 dark:border-slate-600 dark:bg-slate-800">
         <h2 class="mb-4 font-display text-sm font-bold text-slate-900 dark:text-slate-100">{{ $t('cardForm.typeAndStatus') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <AppSelect v-model="form.type" :options="typeOptions" required>
@@ -38,12 +38,12 @@
             <template #label>{{ $t('cardForm.bank') }}</template>
           </AppSelect>
           <div class="flex items-center gap-2 sm:col-span-2">
-            <input id="form-isBusiness" v-model="form.isBusiness" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-            <label for="form-isBusiness" class="text-sm font-medium text-slate-700">{{ $t('cardForm.businessCard') }}</label>
+            <input id="form-isBusiness" v-model="form.isBusiness" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" />
+            <label for="form-isBusiness" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.businessCard') }}</label>
           </div>
         </div>
       </div>
-      <div class="border border-slate-200 bg-white p-6">
+      <div v-if="id" class="border border-slate-200 bg-white p-6">
         <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.amounts') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
@@ -62,35 +62,92 @@
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.rewardPoints') }}</label>
             <input v-model.number="form.rewardPoints" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
-          <div>
+          <div v-if="id">
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.expenses') }}</label>
             <input v-model.number="form.expenses" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
-          <div>
+          <div v-if="id">
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.progression') }}</label>
             <input v-model.number="form.progression" type="number" min="0" max="100" step="0.01" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
         </div>
       </div>
-      <div class="border border-slate-200 bg-white p-6">
+      <div v-if="id" class="border border-slate-200 bg-white p-6 dark:border-slate-600 dark:bg-slate-800">
+        <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.benefits') }}</h2>
+        <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ $t('cardForm.benefitsHint') }}</p>
+        <div class="space-y-4">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <input id="form-firstYearFree" v-model="form.firstYearFree" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" />
+              <label for="form-firstYearFree" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.firstYearFree') }}</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="form-loungeAccess" v-model="form.loungeAccess" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" />
+              <label for="form-loungeAccess" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.loungeAccess') }}</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="form-noForeignTransactionFee" v-model="form.noForeignTransactionFee" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" />
+              <label for="form-noForeignTransactionFee" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.noForeignTransactionFee') }}</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="form-travelInsurance" v-model="form.travelInsurance" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" />
+              <label for="form-travelInsurance" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.travelInsurance') }}</label>
+            </div>
+          </div>
+          <div v-if="form.loungeAccess" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.loungeAccessDetails') }}</label>
+              <input v-model="form.loungeAccessDetails" type="text" placeholder="e.g. Priority Pass, 4 visits/year" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" />
+            </div>
+          </div>
+          <div v-if="form.travelInsurance" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.travelInsuranceDetails') }}</label>
+              <input v-model="form.travelInsuranceDetails" type="text" placeholder="e.g. Trip cancellation, medical" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" />
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.annualTravelCredit') }}</label>
+            <input v-model.number="form.annualTravelCredit" type="number" min="0" step="1" :placeholder="$t('cardForm.annualTravelCreditPlaceholder')" class="w-28 border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" />
+            <span class="text-sm text-slate-500 dark:text-slate-400">$</span>
+          </div>
+        </div>
+      </div>
+      <div class="border border-slate-200 bg-white p-6 dark:border-slate-600 dark:bg-slate-800">
         <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.dates') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.openDate') }}</label>
-            <input v-model="form.openDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.openDate') }}</label>
+            <input v-model="form.openDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" @change="onOpenDateChange" />
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.closeDate') }}</label>
-            <input v-model="form.closeDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.possibleReopenDate') }}</label>
-            <input v-model="form.possibleReopenDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.deadline') }}</label>
-            <input v-model="form.deadline" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
-          </div>
+          <template v-if="id">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.deadline') }}</label>
+              <input v-model="form.deadline" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+          </template>
+          <template v-else>
+            <div class="sm:col-span-2 space-y-2">
+              <div class="flex items-center gap-2">
+                <input id="form-keepCard" v-model="noPlannedClose" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600" @change="onKeepCardChange" />
+                <label for="form-keepCard" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.keepCard') }}</label>
+              </div>
+              <div v-if="!noPlannedClose">
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.closeDate') }}</label>
+                <input v-model="form.deadline" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+              </div>
+            </div>
+          </template>
+          <template v-if="id">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.closeDate') }}</label>
+              <input v-model="form.closeDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.possibleReopenDate') }}</label>
+              <input v-model="form.possibleReopenDate" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+          </template>
         </div>
       </div>
       <div class="border border-slate-200 bg-white p-6 dark:border-slate-600 dark:bg-slate-800">
@@ -129,7 +186,7 @@
               <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.rewardPointsLevel') }}</label>
               <input v-model.number="level.rewardPoints" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
             </div>
-            <div>
+            <div v-if="id">
               <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.achievedAt') }}</label>
               <input v-model="level.achievedAt" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
             </div>
@@ -137,9 +194,9 @@
         </div>
         <AppButton type="button" variant="outline" size="sm" @click="addLevel">{{ $t('cardForm.addLevel') }}</AppButton>
       </div>
-      <div class="border border-slate-200 bg-white p-6">
-        <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.pointsDetails') }}</label>
-        <textarea v-model="form.pointsDetails" rows="3" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"></textarea>
+      <div v-if="id" class="border border-slate-200 bg-white p-6">
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.pointsDetails') }}</label>
+        <textarea v-model="form.pointsDetails" rows="3" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"></textarea>
       </div>
       <div class="flex gap-3">
         <AppButton type="button" variant="secondary" size="md" @click="$router.push('/cards')">{{ $t('cardForm.cancel') }}</AppButton>
@@ -174,6 +231,7 @@ const id = props.id ?? route.params.id;
 const loadError = ref(null);
 const saving = ref(false);
 const refreshing = ref(false);
+const noPlannedClose = ref(false);
 
 const form = reactive({
   cardName: '',
@@ -201,6 +259,7 @@ const form = reactive({
   noForeignTransactionFee: false,
   travelInsurance: false,
   travelInsuranceDetails: null,
+  annualTravelCredit: null,
   isBusiness: false,
   bonusLevels: [],
 });
@@ -240,6 +299,33 @@ function renumberLevels() {
   });
 }
 
+function elevenMonthsFromToday() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 11);
+  return d.toISOString().slice(0, 10);
+}
+
+function elevenMonthsAfter(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + 11);
+  return d.toISOString().slice(0, 10);
+}
+
+function onOpenDateChange() {
+  if (!id && !noPlannedClose.value && form.openDate) {
+    form.deadline = elevenMonthsAfter(form.openDate);
+  }
+}
+
+function onKeepCardChange() {
+  if (noPlannedClose.value) {
+    form.deadline = null;
+  } else if (form.openDate) {
+    form.deadline = elevenMonthsAfter(form.openDate);
+  }
+}
+
 function toForm(card) {
   form.cardName = card.cardName ?? '';
   form.type = card.type ?? 'VISA';
@@ -266,6 +352,7 @@ function toForm(card) {
   form.noForeignTransactionFee = card.noForeignTransactionFee === true;
   form.travelInsurance = card.travelInsurance === true;
   form.travelInsuranceDetails = card.travelInsuranceDetails ?? null;
+  form.annualTravelCredit = card.annualTravelCredit ?? null;
   form.isBusiness = card.isBusiness === true;
   const levels = card.bonusLevels && card.bonusLevels.length ? card.bonusLevels : [];
   form.bonusLevels = levels
@@ -310,6 +397,7 @@ function toPayload() {
     noForeignTransactionFee: form.noForeignTransactionFee,
     travelInsurance: form.travelInsurance,
     travelInsuranceDetails: form.travelInsuranceDetails || undefined,
+    annualTravelCredit: form.annualTravelCredit ?? undefined,
     isBusiness: form.isBusiness,
     bonusLevels: form.bonusLevels.map((l, i) => ({
       order: l.order ?? i + 1,
@@ -381,6 +469,10 @@ onMounted(() => {
   if (!id) {
     if (history.state?.prefill) {
       toForm(history.state.prefill);
+      form.status = 'Open';
+      form.openDate = new Date().toISOString().slice(0, 10);
+      form.deadline = elevenMonthsFromToday();
+      noPlannedClose.value = false;
     } else {
       // Adding a card is only allowed from the catalogue (prefill required)
       router.replace('/available-cards');
