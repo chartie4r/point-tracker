@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="logo-rocket-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <!-- Squircle background, slightly rotated -->
+  <path fill="url(#logo-rocket-bg)" d="M34 8c0-1.5-.8-3-3-3H9c-2.2 0-3 1.5-3 3v24c0 1.5.8 3 3 3h22c2.2 0 3-1.5 3-3V8z" transform="rotate(6 20 20)" />
+  <!-- Rocket: nose + body + fins (white) -->
+  <g transform="rotate(45 20 20) translate(5 0) scale(1.4)" fill="white">
+    <path d="M12 0L10 5h4L12 0z" />
+    <path d="M11 5h2v11h-2z" />
+    <path d="M8 14l2 4 2-2v-2H8z" />
+    <path d="M16 14v2h-2l2 2 2-4z" />
+    <circle cx="12" cy="8" r="1.5" />
+  </g>
+</svg>
