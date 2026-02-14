@@ -53,7 +53,8 @@ app.use(
 
 app.use('/api/auth', authRouter);
 app.use('/api/cards', requireAuth, cardsRouter);
-app.use('/api/available-cards', requireAuth, availableCardsRouter);
+// Catalogue (GET list + GET single) is public; POST :id/refresh requires auth in route
+app.use('/api/available-cards', availableCardsRouter);
 app.use('/api/scrape', requireAuth, requireSuperadmin, scraperRouter);
 app.use('/api', requireAuth, snapshotsRouter);
 

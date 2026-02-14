@@ -6,7 +6,7 @@ import { extractCardDataWithAi, isAiExtractionEnabled } from './milesopediaAiExt
 const BASE_URL = 'https://milesopedia.com';
 const SITEMAP_URL = `${BASE_URL}/card-sitemap.xml`;
 const RATE_LIMIT_MS = Number(process.env.SCRAPER_RATE_LIMIT_MS) || 3000;
-const SCRAPE_CONCURRENCY = Number(process.env.SCRAPER_CONCURRENCY) || 5;
+const CONCURRENCY = Math.max(1, Math.min(50, Number(process.env.SCRAPER_CONCURRENCY) || 20));
 const USE_PUPPETEER = process.env.SCRAPER_USE_PUPPETEER === 'true';
 
 /** Whether the full catalog refresh (scrapeMilesopediaCards) will use Puppeteer for card pages. */
@@ -34,10 +34,18 @@ const BANK_MAP = {
 
 // Order matters: most specific first so "rbc avion" wins over "avion", "cibc aventura" over "aventura".
 const POINTS_TYPE_MAP = [
+  // Points privilèges AMEX (before generic "points privilèges" -> Aeroplan)
+  ['points privilèges american express', 'Amex_Privileges'],
+  ['points privilèges amex', 'Amex_Privileges'],
+  ['points-privileges american express', 'Amex_Privileges'],
+  ['points-privileges amex', 'Amex_Privileges'],
+  ['privilèges amex', 'Amex_Privileges'],
   ['points privilèges', 'Aeroplan'],
   ['points-privileges', 'Aeroplan'],
   ['aéroplan', 'Aeroplan'],
   ['aeroplan', 'Aeroplan'],
+  // BNC: "Banque Nationale" appears in card names; match before generic "bnc"
+  ['banque nationale', 'BNC'],
   ['bnc récompenses', 'BNC'],
   ['récompenses bnc', 'BNC'],
   ['marriott bonvoy', 'Marriott_Bonvoy'],
@@ -128,11 +136,11 @@ function pointsTypeFromSlug(slugNorm) {
   if (s.includes('scene')) return 'Scene';
   if (s.includes('cashback')) return 'Cashback';
   if (s.includes('viporter') || s.includes('vip-porter')) return 'VIP_Porter';
+  // Points privilèges AMEX: slug often "points-privileges-american-express" or "...-amex"
   if ((s.includes('privilege') || s.includes('privileges')) && (s.includes('amex') || s.includes('american-express'))) return 'Amex_Privileges';
   if (s.includes('privilege')) return 'Aeroplan';
-  if (s.includes('avios') || s.includes('british-airways')) return 'Avios';
-  if (s.includes('bmo') && (s.includes('recompenses') || s.includes('rewards'))) return 'BMO_Recompenses';
-  if (s.includes('westjet')) return 'WestJet_Rewards';
+  // BNC: slug often "banque-nationale" or "bnc" (not always "bnc")
+  if (s.includes('banque-nationale')) return 'BNC';
   if (s.includes('bnc') && (s.includes('recompenses') || s.includes('rewards'))) return 'BNC';
   if (s.includes('bnc')) return 'BNC';
   if (s.includes('td')) return 'TD';
@@ -220,24 +228,12 @@ function extractEmbeddedCardData(html) {
     const m = html.match(re);
     if (m && m[1]) {
       const v = normalize(m[1]);
-      if ((v.includes('privilege') || v.includes('privileges')) && (v.includes('amex') || v.includes('american'))) {
+      if ((v.includes('privilege') || v.includes('privileges')) && v.includes('amex')) {
         out.pointsType = 'Amex_Privileges';
         break;
       }
       if (v.includes('aeroplan') || v.includes('privilege')) {
         out.pointsType = 'Aeroplan';
-        break;
-      }
-      if (v.includes('avios') || (v.includes('british') && v.includes('airways'))) {
-        out.pointsType = 'Avios';
-        break;
-      }
-      if (v.includes('bmo') && (v.includes('recompenses') || v.includes('rewards'))) {
-        out.pointsType = 'BMO_Recompenses';
-        break;
-      }
-      if (v.includes('westjet')) {
-        out.pointsType = 'WestJet_Rewards';
         break;
       }
       if (v.includes('avion')) {
@@ -264,7 +260,7 @@ function extractEmbeddedCardData(html) {
         out.pointsType = 'VIP_Porter';
         break;
       }
-      if (v.includes('bnc')) {
+      if ((v.includes('banque') && v.includes('nationale')) || v.includes('bnc')) {
         out.pointsType = 'BNC';
         break;
       }
@@ -302,7 +298,143 @@ function extractEmbeddedCardData(html) {
     }
   }
 
+  // Lounge / VIP salon: embedded JSON keys (snake_case or camelCase)
+  const loungeTrue = /"lounge_access"\s*:\s*(?:true|"true")/i.test(html)
+    || /"has_lounge"\s*:\s*(?:true|"true")/i.test(html)
+    || /"lounge"\s*:\s*(?:true|"true")/i.test(html)
+    || /"salon_vip"\s*:\s*(?:true|"true")/i.test(html)
+    || /"vip_lounge"\s*:\s*(?:true|"true")/i.test(html);
+  if (loungeTrue) out.loungeAccess = true;
+  // Array of advantages/benefits/features containing lounge/salon
+  const advantagesM = html.match(/"avantages"\s*:\s*\[([^\]]+)\]/i) || html.match(/"benefits"\s*:\s*\[([^\]]+)\]/i) || html.match(/"features"\s*:\s*\[([^\]]+)\]/i);
+  if (advantagesM && /lounge|salon|priority\s*pass|dragon\s*pass|vip\s*(?:salon|lounge)/i.test(advantagesM[1])) {
+    out.loungeAccess = true;
+  }
+
+  // Annual travel credit (crédit voyages annuel): "annual_credit":"100" or "travel_benefits":"150" (BNC uses travel_benefits for $ amount)
+  const annualCreditM = html.match(/"annual_credit"\s*:\s*"(\d+)"/);
+  if (annualCreditM) {
+    const n = parseInt(annualCreditM[1], 10);
+    if (n >= 0 && n <= 2000) out.annualTravelCredit = n;
+  }
+  if (out.annualTravelCredit == null) {
+    const travelBenefitsM = html.match(/"travel_benefits"\s*:\s*"(\d+)"/);
+    if (travelBenefitsM) {
+      const n = parseInt(travelBenefitsM[1], 10);
+      if (n >= 50 && n <= 2000) out.annualTravelCredit = n;
+    }
+  }
+
+  // First year free (frais annulés la 1re année): Milesopedia "first_year_fee":true means fee waived in Y1
+  if (/"first_year_fee"\s*:\s*true/i.test(html) || /"first_year_fee"\s*:\s*"true"/i.test(html)) {
+    out.firstYearFree = true;
+  }
+
   return out;
+}
+
+/**
+ * Extract lounge access from page HTML/text (FR + EN patterns).
+ * Returns { loungeAccess: boolean, loungeAccessDetails: string | null }.
+ */
+function extractLoungeFromHtml(html) {
+  const out = { loungeAccess: false, loungeAccessDetails: null };
+  if (!html || typeof html !== 'string') return out;
+
+  // French: accès aux salons, salons VIP, salon aéroport, Priority Pass, Dragon Pass, visites salon
+  const frPatterns = [
+    /acc[eè]s\s+aux\s+salons/i,
+    /salons?\s+vip/i,
+    /salon(s)?\s+(?:a[eé]roport|d['']?attente)/i,
+    /priority\s+pass/i,
+    /dragon\s+pass/i,
+    /visites?\s+salon/i,
+    /acc[eè]s\s+salon/i,
+  ];
+  // English
+  const enPatterns = [
+    /lounge\s+access/i,
+    /airport\s+lounge/i,
+    /complimentary\s+lounge/i,
+    /priority\s+pass/i,
+    /dragon\s+pass/i,
+    /lounge\s+visits?/i,
+    /vip\s+lounge/i,
+  ];
+
+  for (const re of [...frPatterns, ...enPatterns]) {
+    if (re.test(html)) {
+      out.loungeAccess = true;
+      break;
+    }
+  }
+
+  // Optional: capture a short detail (e.g. "Priority Pass, 4 visites/an" or "Complimentary lounge visits")
+  if (out.loungeAccess) {
+    const snippetRe = /(?:priority\s+pass|dragon\s+pass|acc[eè]s\s+salons?|lounge\s+access)[^.<>]{0,80}/gi;
+    const m = html.match(snippetRe);
+    if (m && m[0]) {
+      const detail = m[0].replace(/\s+/g, ' ').replace(/<[^>]+>/g, '').trim().slice(0, 120);
+      if (detail.length > 5) out.loungeAccessDetails = detail;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Extract "first year free" (frais annulés la 1re année) from page text.
+ * Returns boolean.
+ */
+function extractFirstYearFreeFromHtml(html) {
+  if (!html || typeof html !== 'string') return false;
+  const fr = /aucuns?\s+frais\s+la\s+(?:premi[eè]re\s+ann[eé]e|1re\s+ann[eé]e)/i.test(html)
+    || /(?:premi[eè]re\s+ann[eé]e|1re\s+ann[eé]e)\s+gratuite/i.test(html)
+    || /remise\s+(?:sur\s+)?les?\s+frais\s+annuels\s+la\s+premi[eè]re\s+ann[eé]e/i.test(html)
+    || /frais\s+annuels?\s+(?:rembours[eé]s|gratuits?|offerts?)\s+la\s+premi[eè]re\s+ann[eé]e/i.test(html)
+    || /aucun\s+frais\s+la\s+premi[eè]re\s+ann[eé]e/i.test(html);
+  const en = /first\s+year\s+free/i.test(html)
+    || /no\s+annual\s+fee\s+(?:for\s+)?the\s+first\s+year/i.test(html)
+    || /annual\s+fee\s+waived\s+(?:for\s+)?(?:the\s+)?first\s+year/i.test(html)
+    || /fee\s+waived\s+first\s+year/i.test(html);
+  return fr || en;
+}
+
+/**
+ * Extract annual travel credit (crédit voyages annuel) in dollars from page text.
+ * Returns number | null (e.g. 100, 150).
+ */
+function extractAnnualTravelCreditFromHtml(html) {
+  if (!html || typeof html !== 'string') return null;
+  // French: "crédit annuel de 100 $", "crédit voyage annuel de 150 $", "Crédit Annuel de 100 $", "remboursement... 150 $ par année"
+  const frPatterns = [
+    /cr[eé]dit\s+annuel\s+(?:pour\s+voyage\s+)?(?:de\s+)?(\d[\d\s]*)\s*\$/i,
+    /cr[eé]dit\s+voyage(?:s)?\s+annuel\s+(?:de\s+)?(\d[\d\s]*)\s*\$/i,
+    /cr[eé]dit\s+annuel\s+(\d[\d\s]*)\s*\$/i,
+    /jusqu['\u2019]?\s*à\s+(\d[\d\s]*)\s*\$\s+de\s+remboursement\s+par\s+ann[eé]e/i,
+    /(\d[\d\s]*)\s*\$\s+(?:cr[eé]dit\s+)?(?:voyage\s+)?annuel/i,
+  ];
+  for (const re of frPatterns) {
+    const m = html.match(re);
+    if (m && m[1]) {
+      const n = parseInt(m[1].replace(/\s/g, ''), 10);
+      if (n >= 50 && n <= 2000) return n;
+    }
+  }
+  // English: "annual travel credit of $100", "$100 annual travel credit"
+  const enPatterns = [
+    /annual\s+travel\s+credit\s+(?:of\s+)?\$?\s*(\d[\d,]*)/i,
+    /\$?\s*(\d[\d,]*)\s+annual\s+travel\s+credit/i,
+    /travel\s+credit\s+(?:of\s+)?\$?\s*(\d[\d,]*)\s+per\s+year/i,
+  ];
+  for (const re of enPatterns) {
+    const m = html.match(re);
+    if (m && m[1]) {
+      const n = parseInt(m[1].replace(/[\s,]/g, ''), 10);
+      if (n >= 50 && n <= 2000) return n;
+    }
+  }
+  return null;
 }
 
 /**
@@ -333,6 +465,112 @@ function extractWelcomeDollarValue(html) {
     if (!Number.isNaN(n) && n >= 100 && n < 1000000) return n;
   }
   return null;
+}
+
+/**
+ * Parse integer from string with optional commas/spaces (e.g. "40,000" or "2 000").
+ */
+function parseIntFromText(str) {
+  if (str == null || typeof str !== 'string') return null;
+  const n = parseInt(str.replace(/\s/g, '').replace(/,/g, ''), 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Extract tiered bonus levels from "Our review" / "Notre avis" section or full page.
+ * Returns Array<{ order, spendAmount, monthsFromOpen, rewardPoints }>. Falls back to single level from embedded JSON when present.
+ */
+function extractBonusLevelsFromHtml(html, embedded = {}) {
+  if (!html || typeof html !== 'string') return [];
+
+  // Prefer block that contains "Our review" / "Notre avis" to reduce false positives
+  const reviewMatch = html.match(/(?:our\s+review|notre\s+avis)[\s\S]{0,12000}/i);
+  const searchText = reviewMatch ? reviewMatch[0] : html;
+
+  const levels = [];
+  const seen = new Set();
+
+  // EN: "40,000 points after $2,000 in purchases within the first three months"
+  const enMonthsRe = /(\d{1,3}(?:,\d{3})*(?:\s\d{3})*)\s*points?\s+after\s+\$?([\d,]+)\s+in\s+purchases?\s+within\s+the\s+first\s+(\d+)\s+months?/gi;
+  let m;
+  while ((m = enMonthsRe.exec(searchText)) !== null) {
+    const points = parseIntFromText(m[1]);
+    const spend = parseIntFromText(m[2]);
+    const months = parseInt(m[3], 10);
+    if (points != null && spend != null && months >= 1 && months <= 120) {
+      const key = `${points}-${spend}-${months}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        levels.push({ order: levels.length + 1, spendAmount: spend, monthsFromOpen: months, rewardPoints: points });
+      }
+    }
+  }
+
+  // EN: "10,000 points after $40,000 in purchases in the first year"
+  const enYearRe = /(\d{1,3}(?:,\d{3})*(?:\s\d{3})*)\s*points?\s+after\s+\$?([\d,]+)\s+in\s+purchases?\s+in\s+the\s+first\s+year/gi;
+  while ((m = enYearRe.exec(searchText)) !== null) {
+    const points = parseIntFromText(m[1]);
+    const spend = parseIntFromText(m[2]);
+    if (points != null && spend != null) {
+      const key = `${points}-${spend}-12`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        levels.push({ order: levels.length + 1, spendAmount: spend, monthsFromOpen: 12, rewardPoints: points });
+      }
+    }
+  }
+
+  // FR: "X points après Y $ d'achats dans les Z premiers mois" / "dans la première année"
+  const frMonthsRe = /(\d{1,3}(?:[\s,]?\d{3})*)\s*points?\s+apres\s+([\d\s]+)\s*\$?\s*(?:d['']achats?|en\s+achats?)?\s+dans\s+les\s+(\d+)\s+premiers\s+mois/gi;
+  while ((m = frMonthsRe.exec(searchText)) !== null) {
+    const points = parseIntFromText(m[1]);
+    const spend = parseIntFromText(m[2]);
+    const months = parseInt(m[3], 10);
+    if (points != null && spend != null && months >= 1 && months <= 120) {
+      const key = `${points}-${spend}-${months}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        levels.push({ order: levels.length + 1, spendAmount: spend, monthsFromOpen: months, rewardPoints: points });
+      }
+    }
+  }
+
+  const frYearRe = /(\d{1,3}(?:[\s,]?\d{3})*)\s*points?\s+apres\s+([\d\s]+)\s*\$?\s*(?:d['']achats?|en\s+achats?)?\s+dans\s+la\s+premiere\s+annee/gi;
+  while ((m = frYearRe.exec(searchText)) !== null) {
+    const points = parseIntFromText(m[1]);
+    const spend = parseIntFromText(m[2]);
+    if (points != null && spend != null) {
+      const key = `${points}-${spend}-12`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        levels.push({ order: levels.length + 1, spendAmount: spend, monthsFromOpen: 12, rewardPoints: points });
+      }
+    }
+  }
+
+  // Sort by monthsFromOpen so order is chronological; re-assign order 1,2,3...
+  if (levels.length > 0) {
+    levels.sort((a, b) => (a.monthsFromOpen ?? 99) - (b.monthsFromOpen ?? 99));
+    levels.forEach((l, i) => {
+      l.order = i + 1;
+    });
+    return levels;
+  }
+
+  // Fallback: single level from embedded JSON
+  const spend = embedded.minSpend ?? null;
+  const points = embedded.welcomeBonusPoints ?? null;
+  if (spend == null || points == null) return [];
+
+  let months = null;
+  const timeframeM = html.match(/"minimum_spending_timeframe_months"\s*:\s*"([^"]+)"/);
+  if (timeframeM) {
+    const num = parseInt(timeframeM[1].replace(/\D/g, ''), 10);
+    if (!Number.isNaN(num) && num >= 1 && num <= 120) months = num;
+  }
+  if (months == null && /year|an(née|nee)?/i.test(html)) months = 12;
+
+  return [{ order: 1, spendAmount: spend, monthsFromOpen: months, rewardPoints: points }];
 }
 
 /** Fetch HTML with node-fetch (no JS execution). Used for sitemap and when Puppeteer is disabled. */
@@ -438,7 +676,7 @@ export async function scrapeMilesopediaCards(options = {}) {
     }
   });
 
-  console.log(`[Milesopedia] Sitemap: ${cardLinks.length} card URL(s) to scrape`);
+  console.log(`[Milesopedia] Sitemap: ${cardLinks.length} card URL(s) to scrape (concurrency: ${CONCURRENCY})`);
   let browser = null;
   if (USE_PUPPETEER) {
     try {
@@ -468,44 +706,67 @@ export async function scrapeMilesopediaCards(options = {}) {
     bonusDetails: c.bonusDetails ?? null,
     milesopediaUrl: c.milesopediaUrl ?? null,
     milesopediaSlug: c.milesopediaSlug,
+    subscribeUrl: c.subscribeUrl ?? null,
+    firstYearFree: c.firstYearFree === true,
+    loungeAccess: c.loungeAccess === true,
+    loungeAccessDetails: c.loungeAccessDetails ?? null,
+    noForeignTransactionFee: c.noForeignTransactionFee === true,
+    travelInsurance: c.travelInsurance === true,
+    travelInsuranceDetails: c.travelInsuranceDetails ?? null,
+    annualTravelCredit: c.annualTravelCredit ?? null,
     isBusiness: c.isBusiness === true,
   });
 
-  async function processOne(link) {
-    const { url, slug } = link;
+  /** Process one card: fetch, parse, optionally AI. Returns { card, url, slug } or null on skip/failure. */
+  async function fetchAndParseOne({ url, slug }) {
     try {
       const pageHtml = await fetchCardPage(url, browser);
       let card = parseCardDetail(pageHtml, url, slug);
       if (useAi) card = await mergeAiExtraction(pageHtml, card);
       if (!card.cardName) return null;
-      return card;
+      return { card, url, slug };
     } catch (e) {
       console.warn(`[Milesopedia] Skip ${url}:`, e.message);
       return null;
     }
   }
 
-  async function saveCard(card) {
+  /** Save one parsed card to DB. */
+  async function saveOne(card) {
     try {
-      await prisma.scrapedCard.upsert({
+      const saved = await prisma.scrapedCard.upsert({
         where: { milesopediaSlug: card.milesopediaSlug },
         create: dbPayload(card),
         update: dbPayload(card),
       });
+      await prisma.scrapedBonusLevel.deleteMany({ where: { scrapedCardId: saved.id } });
+      if (card.bonusLevels && card.bonusLevels.length > 0) {
+        await prisma.scrapedBonusLevel.createMany({
+          data: card.bonusLevels.map((l, i) => ({
+            scrapedCardId: saved.id,
+            order: l.order ?? i + 1,
+            spendAmount: l.spendAmount ?? null,
+            monthsFromOpen: l.monthsFromOpen ?? null,
+            rewardPoints: l.rewardPoints ?? null,
+          })),
+        });
+      }
       console.log(`[Milesopedia] DB updated: ${card.cardName} (${card.bank}, ${card.milesopediaSlug})`);
     } catch (dbErr) {
       console.warn(`[Milesopedia] DB upsert failed for ${card.milesopediaSlug}:`, dbErr.message);
     }
   }
 
-  for (let i = 0; i < cardLinks.length; i += SCRAPE_CONCURRENCY) {
-    const chunk = cardLinks.slice(i, i + SCRAPE_CONCURRENCY);
-    const cards = await Promise.all(chunk.map(processOne));
-    const valid = cards.filter(Boolean);
-    results.push(...valid);
-    await Promise.all(valid.map(saveCard));
-    console.log(`[Milesopedia] Progress: ${Math.min(i + SCRAPE_CONCURRENCY, total)}/${total} pages, ${results.length} card(s) parsed & saved`);
-    if (i + SCRAPE_CONCURRENCY < cardLinks.length) await delay(RATE_LIMIT_MS);
+  for (let i = 0; i < cardLinks.length; i += CONCURRENCY) {
+    const batch = cardLinks.slice(i, i + CONCURRENCY);
+    const settled = await Promise.allSettled(batch.map((link) => fetchAndParseOne(link)));
+    const parsed = settled
+      .filter((p) => p.status === 'fulfilled' && p.value != null)
+      .map((p) => p.value);
+    for (const { card } of parsed) results.push(card);
+    await Promise.all(parsed.map(({ card }) => saveOne(card)));
+    if (i + batch.length < total) await delay(RATE_LIMIT_MS);
+    console.log(`[Milesopedia] Progress: ${Math.min(i + CONCURRENCY, total)}/${total} pages, ${results.length} card(s) parsed & saved`);
   }
 
   if (browser) {
@@ -613,7 +874,21 @@ function parseCardDetail(html, url, slug) {
     if (scotiaType) pointsType = scotiaType;
   }
 
-  // Annual cost: embedded first, then DOM (prefer short "Frais annuels" + number)
+  // AMEX: "Points privilèges" (without "Aeroplan") => Amex_Privileges
+  const combinedNorm = normalize(cardName + ' ' + bodyText + ' ' + slugWithSpaces);
+  if (bank === 'AMEX' && (pointsType === 'Aeroplan' || !pointsType)) {
+    if (combinedNorm.includes('points privileges') && (combinedNorm.includes('amex') || combinedNorm.includes('american express'))) {
+      pointsType = 'Amex_Privileges';
+    }
+  }
+
+  // BNC: when bank is BNC and points type still unknown, default to BNC (Banque Nationale cards use BNC points)
+  if (bank === 'BNC' && !pointsType) {
+    pointsType = 'BNC';
+  }
+
+  // Annual cost (facturés annuellement): embedded "annual_fee" first, then DOM "Frais annuels X $".
+  // Validation: only sanity bounds (0 <= n < 10000). No cross-check against another source; firstYearFree indicates when fee is waived in Y1.
   let annualCost = embedded.annualCost ?? null;
   if (annualCost === null) {
     const feeMatch = bodyText.match(/Frais\s+annuels\s*(\d[\d\s]*)\s*\$?/i) || bodyText.match(/frais\s+annuels\s*(\d[\d\s]*)\s*\$?/i);
@@ -650,7 +925,6 @@ function parseCardDetail(html, url, slug) {
       const n = extractNumber(y1Text);
       if (n !== null && n >= 0 && n < 1000000) welcomeValueY1 = n;
     }
-    console.log('[Milesopedia] #welcome_offer_year_one in DOM, y1Text:', JSON.stringify(y1Text), '-> welcomeValueY1:', welcomeValueY1);
     if (!y1Text || welcomeValueY1 === null) {
       // Div exists but empty (likely JS-rendered content). Try raw HTML in case value is in the response.
       const rawY1Match = html.match(/id=["']welcome_offer_year_one["'][^>]*>([\s\S]*?)<\/div\s*>/i);
@@ -670,7 +944,6 @@ function parseCardDetail(html, url, slug) {
         }
         if (rawVal !== null) {
           welcomeValueY1 = rawVal;
-          console.log('[Milesopedia] welcomeValueY1 from raw HTML (DOM was empty):', welcomeValueY1);
         }
       }
     }
@@ -685,7 +958,6 @@ function parseCardDetail(html, url, slug) {
       if (welcomeValueY2 === 2) welcomeValueY2 = null;
     }
   } else {
-    console.log('[Milesopedia] #welcome_offer_year_one not in DOM, trying raw HTML fallback');
     const rawY1Match = html.match(/id=["']welcome_offer_year_one["'][^>]*>([\s\S]*?)<\/div\s*>/i);
     if (rawY1Match) {
       const rawY1Text = normalizeSpaces(
@@ -701,13 +973,11 @@ function parseCardDetail(html, url, slug) {
         const n = extractNumber(rawY1Text);
         if (n !== null && n >= 0 && n < 1000000) welcomeValueY1 = n;
       }
-      console.log('[Milesopedia] Raw HTML welcome_offer_year_one -> welcomeValueY1:', welcomeValueY1);
     }
   }
   // Fallback: embedded JSON main.value (first year dollar value) - used when DOM/raw HTML have no value (e.g. JS-rendered page)
   if (welcomeValueY1 === null && embedded.welcomeValueY1 != null) {
     welcomeValueY1 = embedded.welcomeValueY1;
-    console.log('[Milesopedia] welcomeValueY1 from embedded JSON (main.value):', welcomeValueY1);
   }
   // Fallback: regex "valeur pouvant aller jusqu'à X $"
   if (welcomeValueY1 === null) {
@@ -781,11 +1051,47 @@ function parseCardDetail(html, url, slug) {
   // When card explicitly has no welcome offer, set first year value to 0
   const finalWelcomeValueY1 = noWelcomeBonus ? 0 : (welcomeValueY1 ?? null);
 
-  const nameForBusiness = (cardName || '').toLowerCase();
-  const slugForBusiness = (slug || '').toLowerCase().replace(/-/g, ' ');
-  const businessInName = /entreprise|enterprise/.test(nameForBusiness);
-  const businessInSlug = /entreprise|enterprise|affaires|business/.test(slugForBusiness);
-  const isBusiness = businessInName || businessInSlug;
+  const bonusLevels = extractBonusLevelsFromHtml(html, embedded);
+
+  // Lounge access: embedded JSON first, then HTML/text patterns (FR + EN)
+  const loungeFromHtml = extractLoungeFromHtml(html);
+  const loungeAccess = embedded.loungeAccess === true || loungeFromHtml.loungeAccess;
+  const loungeAccessDetails = loungeFromHtml.loungeAccessDetails ?? (loungeAccess ? null : null);
+
+  // Annual travel credit (crédit voyages annuel): embedded first, then HTML text
+  const annualTravelCredit = embedded.annualTravelCredit ?? extractAnnualTravelCreditFromHtml(html) ?? null;
+
+  // First year free (frais annulés la 1re année): embedded first, then HTML text. No external validation — we trust scraped source.
+  const firstYearFree = embedded.firstYearFree === true || extractFirstYearFreeFromHtml(html);
+
+  // Personal vs Business: slug (e.g. "aeroplan-business-amex", "carte-affaires") or page/embedded
+  let isBusiness = false;
+  if (/\b(affaires|business|entreprise|commercial)\b/.test(slugNorm) || /\b(affaires|business|entreprise)\b/.test(normalize(cardName))) {
+    isBusiness = true;
+  }
+  if (!isBusiness && html) {
+    const lower = html.toLowerCase();
+    if (/"segment"\s*:\s*"?(business|affaires|entreprise)"/.test(lower) || /"card_category"\s*:\s*"?(business|affaires)"/.test(lower)) {
+      isBusiness = true;
+    }
+  }
+
+  // Subscribe/apply URL: look for CTA link (S'abonner, Postuler, Apply, etc.)
+  let subscribeUrl = null;
+  $('a[href^="http"]').each((_, el) => {
+    const href = $(el).attr('href');
+    const text = normalize($(el).text());
+    if (!href || subscribeUrl) return;
+    if (
+      text.includes('s\'abonner') ||
+      text.includes('postuler') ||
+      text.includes('apply') ||
+      text.includes('demander') ||
+      text.includes('obtenir la carte')
+    ) {
+      subscribeUrl = href;
+    }
+  });
 
   return {
     cardName: cardName || 'Unknown',
@@ -802,6 +1108,15 @@ function parseCardDetail(html, url, slug) {
     bonusDetails,
     milesopediaUrl: url,
     milesopediaSlug: slug,
+    subscribeUrl: subscribeUrl ?? null,
+    firstYearFree,
+    loungeAccess,
+    loungeAccessDetails,
+    noForeignTransactionFee: false,
+    travelInsurance: false,
+    travelInsuranceDetails: null,
+    annualTravelCredit,
     isBusiness,
+    bonusLevels,
   };
 }

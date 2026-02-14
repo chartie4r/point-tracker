@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { scrapeSingleMilesopediaCard } from '../services/milesopediaScraper.js';
-import { requireSuperadmin } from '../middleware/auth.js';
+import { requireAuth, requireSuperadmin } from '../middleware/auth.js';
 
 export const availableCardsRouter = Router();
 const prisma = new PrismaClient();
@@ -32,11 +32,19 @@ function serialize(card) {
     bonusDetails: card.bonusDetails,
     milesopediaUrl: card.milesopediaUrl,
     milesopediaSlug: card.milesopediaSlug,
+    subscribeUrl: card.subscribeUrl ?? null,
+    firstYearFree: card.firstYearFree === true,
+    loungeAccess: card.loungeAccess === true,
+    loungeAccessDetails: card.loungeAccessDetails ?? null,
+    noForeignTransactionFee: card.noForeignTransactionFee === true,
+    travelInsurance: card.travelInsurance === true,
+    travelInsuranceDetails: card.travelInsuranceDetails ?? null,
+    annualTravelCredit: card.annualTravelCredit ?? null,
     isBusiness: card.isBusiness === true,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
-  if (card.bonusLevels && card.bonusLevels.length) {
+  if (card.bonusLevels) {
     out.bonusLevels = card.bonusLevels.map(serializeLevel);
   }
   return out;
@@ -45,7 +53,10 @@ function serialize(card) {
 availableCardsRouter.get('/', async (req, res) => {
   try {
     const [cards, catalogRefresh] = await Promise.all([
-      prisma.scrapedCard.findMany({ orderBy: { cardName: 'asc' } }),
+      prisma.scrapedCard.findMany({
+        orderBy: { cardName: 'asc' },
+        include: { bonusLevels: { orderBy: { order: 'asc' } } },
+      }),
       prisma.catalogRefresh.findUnique({ where: { id: 'catalog' } }).catch(() => null),
     ]);
     const lastRefreshedAt = catalogRefresh?.completedAt?.toISOString() ?? null;
@@ -70,7 +81,7 @@ availableCardsRouter.get('/:id', async (req, res) => {
   }
 });
 
-availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) => {
+availableCardsRouter.post('/:id/refresh', requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const useAi = req.query.useAi === 'true' || req.body?.useAi === true;
     console.log('[AvailableCards] POST /:id/refresh', req.params.id, useAi ? '(AI)' : '');
@@ -88,7 +99,7 @@ availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) =>
     const scraped = await scrapeSingleMilesopediaCard(existing.milesopediaUrl, { useAi });
     console.log('[AvailableCards] Parsed welcomeValueY1:', scraped.welcomeValueY1);
 
-    const updated = await prisma.scrapedCard.update({
+    await prisma.scrapedCard.update({
       where: { id: existing.id },
       data: {
         cardName: scraped.cardName,
@@ -104,10 +115,34 @@ availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) =>
         bonusDetails: scraped.bonusDetails ?? null,
         milesopediaUrl: scraped.milesopediaUrl || existing.milesopediaUrl,
         milesopediaSlug: scraped.milesopediaSlug || existing.milesopediaSlug,
-        isBusiness: scraped.isBusiness === true,
+        subscribeUrl: scraped.subscribeUrl ?? existing.subscribeUrl ?? null,
+        firstYearFree: scraped.firstYearFree === true,
+        loungeAccess: scraped.loungeAccess === true,
+        loungeAccessDetails: scraped.loungeAccessDetails ?? null,
+        noForeignTransactionFee: scraped.noForeignTransactionFee === true,
+        travelInsurance: scraped.travelInsurance === true,
+        travelInsuranceDetails: scraped.travelInsuranceDetails ?? null,
+        annualTravelCredit: scraped.annualTravelCredit ?? null,
       },
     });
 
+    await prisma.scrapedBonusLevel.deleteMany({ where: { scrapedCardId: existing.id } });
+    if (scraped.bonusLevels && scraped.bonusLevels.length > 0) {
+      await prisma.scrapedBonusLevel.createMany({
+        data: scraped.bonusLevels.map((l, i) => ({
+          scrapedCardId: existing.id,
+          order: l.order ?? i + 1,
+          spendAmount: l.spendAmount ?? null,
+          monthsFromOpen: l.monthsFromOpen ?? null,
+          rewardPoints: l.rewardPoints ?? null,
+        })),
+      });
+    }
+
+    const updated = await prisma.scrapedCard.findUnique({
+      where: { id: existing.id },
+      include: { bonusLevels: { orderBy: { order: 'asc' } } },
+    });
     res.json(serialize(updated));
   } catch (err) {
     res.status(500).json({ error: err.message });

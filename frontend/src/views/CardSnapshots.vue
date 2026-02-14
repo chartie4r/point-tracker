@@ -9,7 +9,7 @@
       </div>
       <template #actions>
         <AppButton to="/cards" variant="outline" size="sm">← {{ $t('snapshots.backToCards') }}</AppButton>
-        <AppButton v-if="card" :to="`/cards/${card.id}/edit`" variant="outline" size="sm">
+        <AppButton v-if="card" :to="`/cards/${card.id}`" variant="outline" size="sm">
           {{ $t('snapshots.editCard') }}
         </AppButton>
       </template>

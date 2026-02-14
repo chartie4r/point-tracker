@@ -5,8 +5,9 @@ const prisma = new PrismaClient();
 
 const CARD_TYPE = ['VISA', 'MASTERCARD', 'AMEX'];
 const CARD_STATUS = ['Open', 'Closed', 'Refused', 'To_Open'];
-const POINTS_TYPE = ['Aeroplan', 'Amex_Privileges', 'Avios', 'BMO_Recompenses', 'BNC', 'Marriott_Bonvoy', 'CIBC', 'RBC', 'Cashback', 'Scene', 'TD', 'VIP_Porter', 'WestJet_Rewards'];
+const POINTS_TYPE = ['Aeroplan', 'Amex_Privileges', 'BNC', 'Marriott_Bonvoy', 'CIBC', 'RBC', 'Cashback', 'Scene', 'TD', 'VIP_Porter'];
 const BANK = ['AMEX', 'BMO', 'BNC', 'CIBC', 'RBC', 'Scotia', 'TD'];
+const REQUIREMENT_TYPE = ['spend', 'transaction'];
 
 function validateCardBody(body, isUpdate = false) {
   const err = new Error();
@@ -65,12 +66,48 @@ function validateCardBody(body, isUpdate = false) {
     err.message = 'pointsValue must be a non-negative number';
     throw err;
   }
+  if (body.rewardPoints !== undefined && body.rewardPoints != null && (typeof body.rewardPoints !== 'number' || body.rewardPoints < 0)) {
+    err.message = 'rewardPoints must be a non-negative number';
+    throw err;
+  }
   if (body.progression !== undefined && body.progression != null) {
     const p = Number(body.progression);
     if (Number.isNaN(p) || p < 0 || p > 100) {
       err.message = 'progression must be a number between 0 and 100';
       throw err;
     }
+  }
+  if (body.bonusLevels !== undefined) {
+    if (!Array.isArray(body.bonusLevels)) {
+      err.message = 'bonusLevels must be an array';
+      throw err;
+    }
+    body.bonusLevels.forEach((level, i) => {
+      if (level.order !== undefined && (typeof level.order !== 'number' || level.order < 1)) {
+        err.message = `bonusLevels[${i}].order must be a positive integer`;
+        throw err;
+      }
+      if (level.spendAmount !== undefined && level.spendAmount != null && (typeof level.spendAmount !== 'number' || level.spendAmount < 0)) {
+        err.message = `bonusLevels[${i}].spendAmount must be a non-negative number`;
+        throw err;
+      }
+      if (level.monthsFromOpen !== undefined && level.monthsFromOpen != null && (typeof level.monthsFromOpen !== 'number' || level.monthsFromOpen < 1)) {
+        err.message = `bonusLevels[${i}].monthsFromOpen must be at least 1`;
+        throw err;
+      }
+      if (level.requirementType !== undefined && !REQUIREMENT_TYPE.includes(level.requirementType)) {
+        err.message = `bonusLevels[${i}].requirementType must be one of: ${REQUIREMENT_TYPE.join(', ')}`;
+        throw err;
+      }
+      if (level.minTransactions !== undefined && level.minTransactions != null && (typeof level.minTransactions !== 'number' || level.minTransactions < 0)) {
+        err.message = `bonusLevels[${i}].minTransactions must be a non-negative number`;
+        throw err;
+      }
+      if (level.rewardPoints !== undefined && level.rewardPoints != null && (typeof level.rewardPoints !== 'number' || level.rewardPoints < 0)) {
+        err.message = `bonusLevels[${i}].rewardPoints must be a non-negative number`;
+        throw err;
+      }
+    });
   }
 }
 
@@ -97,16 +134,40 @@ function toCardPayload(body) {
   if (body.expenses !== undefined) payload.expenses = body.expenses == null ? null : Number(body.expenses);
   if (body.deadline !== undefined) payload.deadline = parseDate(body.deadline);
   if (body.pointsValue !== undefined) payload.pointsValue = body.pointsValue == null ? null : Number(body.pointsValue);
+  if (body.rewardPoints !== undefined) payload.rewardPoints = body.rewardPoints == null ? null : Number(body.rewardPoints);
   if (body.pointsDetails !== undefined) payload.pointsDetails = body.pointsDetails == null ? null : String(body.pointsDetails);
   if (body.milesopediaUrl !== undefined) payload.milesopediaUrl = body.milesopediaUrl == null ? null : String(body.milesopediaUrl);
   if (body.milesopediaSlug !== undefined) payload.milesopediaSlug = body.milesopediaSlug == null ? null : String(body.milesopediaSlug);
+  if (body.bonusDetails !== undefined) payload.bonusDetails = body.bonusDetails == null ? null : String(body.bonusDetails);
+  if (body.firstYearFree !== undefined) payload.firstYearFree = body.firstYearFree === true;
+  if (body.loungeAccess !== undefined) payload.loungeAccess = body.loungeAccess === true;
+  if (body.loungeAccessDetails !== undefined) payload.loungeAccessDetails = body.loungeAccessDetails == null ? null : String(body.loungeAccessDetails);
+  if (body.noForeignTransactionFee !== undefined) payload.noForeignTransactionFee = body.noForeignTransactionFee === true;
+  if (body.travelInsurance !== undefined) payload.travelInsurance = body.travelInsurance === true;
+  if (body.travelInsuranceDetails !== undefined) payload.travelInsuranceDetails = body.travelInsuranceDetails == null ? null : String(body.travelInsuranceDetails);
+  if (body.annualTravelCredit !== undefined) payload.annualTravelCredit = body.annualTravelCredit == null ? null : Number(body.annualTravelCredit);
   if (body.isBusiness !== undefined) payload.isBusiness = body.isBusiness === true;
   return payload;
 }
 
+function serializeBonusLevel(level) {
+  if (!level) return null;
+  return {
+    id: level.id,
+    cardId: level.cardId,
+    order: level.order,
+    spendAmount: level.spendAmount,
+    monthsFromOpen: level.monthsFromOpen,
+    requirementType: level.requirementType,
+    minTransactions: level.minTransactions,
+    rewardPoints: level.rewardPoints,
+    achievedAt: level.achievedAt?.toISOString().slice(0, 10) ?? null,
+  };
+}
+
 function serializeCard(card) {
   if (!card) return null;
-  return {
+  const out = {
     id: card.id,
     userId: card.userId,
     cardName: card.cardName,
@@ -123,13 +184,26 @@ function serializeCard(card) {
     expenses: card.expenses,
     deadline: card.deadline?.toISOString().slice(0, 10) ?? null,
     pointsValue: card.pointsValue,
+    rewardPoints: card.rewardPoints,
     pointsDetails: card.pointsDetails,
     milesopediaUrl: card.milesopediaUrl,
     milesopediaSlug: card.milesopediaSlug,
+    bonusDetails: card.bonusDetails ?? null,
+    firstYearFree: card.firstYearFree === true,
+    loungeAccess: card.loungeAccess === true,
+    loungeAccessDetails: card.loungeAccessDetails ?? null,
+    noForeignTransactionFee: card.noForeignTransactionFee === true,
+    travelInsurance: card.travelInsurance === true,
+    travelInsuranceDetails: card.travelInsuranceDetails ?? null,
+    annualTravelCredit: card.annualTravelCredit ?? null,
     isBusiness: card.isBusiness === true,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
+  if (card.bonusLevels) {
+    out.bonusLevels = card.bonusLevels.map(serializeBonusLevel);
+  }
+  return out;
 }
 
 export async function listCards(userId) {
@@ -141,6 +215,7 @@ export async function listCards(userId) {
         orderBy: { weekStartDate: 'desc' },
         take: 1,
       },
+      bonusLevels: { orderBy: { order: 'asc' } },
     },
   });
   return cards.map((c) => ({
@@ -164,7 +239,7 @@ export async function getCard(id, userId) {
     },
   });
   if (!card) return null;
-  const out = {
+  return {
     ...serializeCard(card),
     snapshots: card.snapshots.map((s) => ({
       id: s.id,
@@ -176,23 +251,34 @@ export async function getCard(id, userId) {
       createdAt: s.createdAt.toISOString(),
     })),
   };
-  if (card.bonusLevels && card.bonusLevels.length) {
-    out.bonusLevels = card.bonusLevels.map((l) => ({
-      id: l.id,
-      order: l.order,
-      spendAmount: l.spendAmount,
-      monthsFromOpen: l.monthsFromOpen,
-      rewardPoints: l.rewardPoints,
-    }));
-  }
-  return out;
 }
 
 export async function createCard(body, userId) {
   validateCardBody(body, false);
   const payload = toCardPayload(body);
   payload.userId = userId || null;
-  const card = await prisma.card.create({ data: payload });
+  const bonusLevels = Array.isArray(body.bonusLevels) ? body.bonusLevels : [];
+  const card = await prisma.$transaction(async (tx) => {
+    const created = await tx.card.create({ data: payload });
+    if (bonusLevels.length) {
+      await tx.cardBonusLevel.createMany({
+        data: bonusLevels.map((level, i) => ({
+          cardId: created.id,
+          order: level.order ?? i + 1,
+          spendAmount: level.spendAmount == null ? null : Number(level.spendAmount),
+          monthsFromOpen: level.monthsFromOpen == null ? null : Number(level.monthsFromOpen),
+          requirementType: level.requirementType ?? 'spend',
+          minTransactions: level.minTransactions == null ? null : Number(level.minTransactions),
+          rewardPoints: level.rewardPoints == null ? null : Number(level.rewardPoints),
+          achievedAt: parseDate(level.achievedAt),
+        })),
+      });
+    }
+    return tx.card.findUnique({
+      where: { id: created.id },
+      include: { bonusLevels: { orderBy: { order: 'asc' } } },
+    });
+  });
   return serializeCard(card);
 }
 
@@ -203,9 +289,30 @@ export async function updateCard(id, body, userId) {
   });
   if (!card) return null;
   const payload = toCardPayload(body);
-  const updated = await prisma.card.update({
-    where: { id },
-    data: payload,
+  const bonusLevels = body.bonusLevels !== undefined && Array.isArray(body.bonusLevels) ? body.bonusLevels : null;
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.card.update({ where: { id }, data: payload });
+    if (bonusLevels !== null) {
+      await tx.cardBonusLevel.deleteMany({ where: { cardId: id } });
+      if (bonusLevels.length) {
+        await tx.cardBonusLevel.createMany({
+          data: bonusLevels.map((level, i) => ({
+            cardId: id,
+            order: level.order ?? i + 1,
+            spendAmount: level.spendAmount == null ? null : Number(level.spendAmount),
+            monthsFromOpen: level.monthsFromOpen == null ? null : Number(level.monthsFromOpen),
+            requirementType: level.requirementType ?? 'spend',
+            minTransactions: level.minTransactions == null ? null : Number(level.minTransactions),
+            rewardPoints: level.rewardPoints == null ? null : Number(level.rewardPoints),
+            achievedAt: parseDate(level.achievedAt),
+          })),
+        });
+      }
+    }
+    return tx.card.findUnique({
+      where: { id },
+      include: { bonusLevels: { orderBy: { order: 'asc' } } },
+    });
   });
   return serializeCard(updated);
 }
@@ -255,6 +362,7 @@ export async function refreshCardFromMilesopedia(id, userId) {
   const scraped = await scrapeSingleMilesopediaCard(url);
 
   const updatePayload = toCardPayload({
+    // Only update fields that come from Milesopedia
     cardName: scraped.cardName,
     type: scraped.type,
     pointsType: scraped.pointsType,
@@ -262,13 +370,25 @@ export async function refreshCardFromMilesopedia(id, userId) {
     annualCost: scraped.annualCost,
     milesopediaUrl: scraped.milesopediaUrl || url,
     milesopediaSlug: scraped.milesopediaSlug,
+    bonusDetails: scraped.bonusDetails,
+    firstYearFree: scraped.firstYearFree,
+    loungeAccess: scraped.loungeAccess,
+    loungeAccessDetails: scraped.loungeAccessDetails,
+    noForeignTransactionFee: scraped.noForeignTransactionFee,
+    travelInsurance: scraped.travelInsurance,
+    travelInsuranceDetails: scraped.travelInsuranceDetails,
+    annualTravelCredit: scraped.annualTravelCredit ?? null,
     isBusiness: scraped.isBusiness,
   });
 
-  const updated = await prisma.card.update({
+  await prisma.card.update({
     where: { id },
     data: updatePayload,
   });
 
+  const updated = await prisma.card.findUnique({
+    where: { id },
+    include: { bonusLevels: { orderBy: { order: 'asc' } } },
+  });
   return serializeCard(updated);
 }

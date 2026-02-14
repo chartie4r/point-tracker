@@ -114,7 +114,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getCards, deleteCard } from '../api/client';
 import { useI18n } from 'vue-i18n';
-import { CARD_STATUSES, BANKS, POINTS_TYPES, pointsTypeLabel, getPointsTypeAccent } from '../constants';
+import { useTranslatedPointsType } from '../composables/useTranslatedPointsType';
+import { CARD_STATUSES, BANKS, POINTS_TYPES, getPointsTypeAccent } from '../constants';
 import BankLogo from '../components/BankLogo.vue';
 import ContentCard from '../components/ContentCard.vue';
 import PageHeader from '../components/PageHeader.vue';
@@ -125,6 +126,7 @@ import AppButton from '../components/AppButton.vue';
 
 const { t } = useI18n();
 const router = useRouter();
+const translatedPointsType = useTranslatedPointsType();
 const loading = ref(true);
 const error = ref(null);
 const cards = ref([]);
@@ -138,7 +140,7 @@ const statusOptions = computed(() =>
 );
 const bankOptions = computed(() => BANKS.map((b) => ({ value: b, label: b })));
 const pointsTypeOptions = computed(() =>
-  POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))
+  POINTS_TYPES.map((p) => ({ value: p, label: translatedPointsType(p) }))
 );
 
 const filteredCards = computed(() => {

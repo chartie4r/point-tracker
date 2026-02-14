@@ -1,5 +1,12 @@
 <template>
-  <span class="card-network-logo" :class="[`card-network-logo--${typeKey}`]" :title="type">
+  <span
+    class="card-network-logo"
+    :class="[
+      `card-network-logo--${typeKey}`,
+      { 'card-network-logo--light': light }
+    ]"
+    :title="type"
+  >
     <img
       v-if="logoUrl && !imgFailed"
       :src="logoUrl"
@@ -17,6 +24,8 @@ import { getCardNetworkLogoUrl } from '../utils/logos';
 
 const props = defineProps({
   type: { type: String, default: '' },
+  /** When true, show logo in white (e.g. on dark card background). */
+  light: { type: Boolean, default: false },
 });
 
 const typeKey = computed(() => (props.type || '').toLowerCase().replace(/\s/g, ''));
@@ -30,7 +39,7 @@ const imgFailed = ref(false);
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 40px;
+  width: 48px;
   height: 26px;
   overflow: hidden;
 }
@@ -38,14 +47,19 @@ const imgFailed = ref(false);
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center;
   display: block;
 }
-.card-network-logo--visa .card-network-logo__img { max-height: 14px; }
-.card-network-logo--mastercard .card-network-logo__img { max-height: 20px; }
-.card-network-logo--amex .card-network-logo__img { max-height: 18px; }
+.card-network-logo--light {
+  color: #fff;
+}
+/* Logo shown as-is (no filter); SVGs with currentColor need inlining to inherit .card-network-logo--light */
 .card-network-logo__fallback {
   font-size: 0.75rem;
   font-weight: 700;
   color: #666;
+}
+.card-network-logo--light .card-network-logo__fallback {
+  color: rgba(255, 255, 255, 0.9);
 }
 </style>

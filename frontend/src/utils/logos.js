@@ -17,11 +17,12 @@ export function getBankInitials(bank) {
   return bank.length >= 2 ? bank.slice(0, 2) : bank;
 }
 
-/** Card network logo URLs (local assets in public/logos/cards/). */
+/** Card network logos (local SVGs: new_* for Visa, Mastercard, Amex). */
 const CARD_NETWORK_LOGO_URLS = {
   visa: '/logos/cards/new_visa.svg',
   mastercard: '/logos/cards/new_mastercard.svg',
   amex: '/logos/cards/new_amex.svg',
+  paypal: '/logos/cards/paypal.svg',
 };
 
 export function getCardNetworkLogoUrl(type) {

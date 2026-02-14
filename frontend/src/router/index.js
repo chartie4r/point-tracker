@@ -9,9 +9,9 @@ const routes = [
   { path: '/profile', name: 'Profile', component: () => import('../views/Profile.vue'), meta: { requiresAuth: true } },
   { path: '/', name: 'Home', component: () => import('../views/Home.vue') },
   { path: '/cards', name: 'CardList', component: () => import('../views/CardList.vue'), meta: { requiresAuth: true } },
-  { path: '/available-cards', name: 'AvailableCards', component: () => import('../views/AvailableCardsList.vue'), meta: { requiresAuth: true } },
+  { path: '/available-cards', name: 'AvailableCards', component: () => import('../views/AvailableCardsList.vue') },
   { path: '/cards/new', name: 'CardNew', component: () => import('../views/CardForm.vue'), props: { id: null }, meta: { requiresAuth: true } },
-  { path: '/cards/:id', name: 'CardDetails', component: () => import('../views/CardDetails.vue'), props: true, meta: { requiresAuth: true } },
+  { path: '/cards/:id', name: 'CardDetails', component: () => import('../views/CardDetails.vue'), props: true, meta: { requiresAuth: true, cataloguePublic: true } },
   { path: '/cards/:id/edit', name: 'CardEdit', component: () => import('../views/CardForm.vue'), props: true, meta: { requiresAuth: true } },
   { path: '/cards/:id/snapshots', name: 'CardSnapshots', component: () => import('../views/CardSnapshots.vue'), props: true, meta: { requiresAuth: true } },
 ];
@@ -29,12 +29,17 @@ router.beforeEach(async (to) => {
   const isLoggedIn = !!user.value;
   const isSuperadmin = user.value?.role === 'superadmin';
   if (to.meta.requiresAuth && !isLoggedIn) {
-    return { name: 'Login', query: { redirect: to.fullPath } };
+    // Catalogue card detail is public when ?mode=catalogue
+    if (to.meta.cataloguePublic && to.query.mode === 'catalogue') {
+      // allow
+    } else {
+      return { name: 'Login', query: { redirect: to.fullPath } };
+    }
   }
   if (to.meta.guest && isLoggedIn && !['ResetPassword'].includes(to.name)) {
     return { path: isSuperadmin ? '/available-cards' : '/cards' };
   }
-  // Superadmin: cards list, edit form, and snapshots redirect to catalogue; CardDetails is allowed (e.g. catalogue preview with ?mode=catalogue)
+  // Superadmin: cards list and edit go to catalogue; CardNew is allowed when adding from catalogue (prefill checked in component)
   if (isLoggedIn && isSuperadmin && ['CardList', 'CardEdit', 'CardSnapshots'].includes(to.name)) {
     return { path: '/available-cards' };
   }

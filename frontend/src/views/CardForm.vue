@@ -23,7 +23,7 @@
         </AppInput>
       </div>
       <div class="border border-slate-200 bg-white p-6">
-        <h2 class="mb-4 font-display text-sm font-bold text-slate-900">Type &amp; statut</h2>
+        <h2 class="mb-4 font-display text-sm font-bold text-slate-900 dark:text-slate-100">{{ $t('cardForm.typeAndStatus') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <AppSelect v-model="form.type" :options="typeOptions" required>
             <template #label>{{ $t('cardForm.type') }}</template>
@@ -38,13 +38,13 @@
             <template #label>{{ $t('cardForm.bank') }}</template>
           </AppSelect>
           <div class="flex items-center gap-2 sm:col-span-2">
-            <input id="form-isBusiness" v-model="form.isBusiness" type="checkbox" class="border-slate-300 text-primary-500 focus:ring-primary-500 dark:accent-violet-500" />
-            <label for="form-isBusiness" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.isBusiness') }}</label>
+            <input id="form-isBusiness" v-model="form.isBusiness" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+            <label for="form-isBusiness" class="text-sm font-medium text-slate-700">{{ $t('cardForm.businessCard') }}</label>
           </div>
         </div>
       </div>
       <div class="border border-slate-200 bg-white p-6">
-        <h2 class="mb-4 text-sm font-semibold text-slate-900">Montants</h2>
+        <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.amounts') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.lineOfCredit') }}</label>
@@ -59,6 +59,10 @@
             <input v-model.number="form.pointsValue" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
           <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.rewardPoints') }}</label>
+            <input v-model.number="form.rewardPoints" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+          </div>
+          <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.expenses') }}</label>
             <input v-model.number="form.expenses" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
           </div>
@@ -69,7 +73,7 @@
         </div>
       </div>
       <div class="border border-slate-200 bg-white p-6">
-        <h2 class="mb-4 text-sm font-semibold text-slate-900">Dates</h2>
+        <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.dates') }}</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.openDate') }}</label>
@@ -89,6 +93,50 @@
           </div>
         </div>
       </div>
+      <div class="border border-slate-200 bg-white p-6 dark:border-slate-600 dark:bg-slate-800">
+        <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $t('cardForm.bonusLevels') }}</h2>
+        <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ $t('cardForm.bonusLevelsHint') }}</p>
+        <div v-for="(level, index) in form.bonusLevels" :key="index" class="mb-4 rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700/50">
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.levelN', { n: index + 1 }) }}</span>
+            <div class="flex gap-1">
+              <button type="button" class="rounded px-2 py-1 text-xs text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" :disabled="index === 0" @click="moveLevel(index, -1)">{{ $t('cardForm.moveUp') }}</button>
+              <button type="button" class="rounded px-2 py-1 text-xs text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" :disabled="index === form.bonusLevels.length - 1" @click="moveLevel(index, 1)">{{ $t('cardForm.moveDown') }}</button>
+              <button type="button" class="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30" @click="removeLevel(index)">{{ $t('cardForm.removeLevel') }}</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.requirementType') }}</label>
+              <select v-model="level.requirementType" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                <option value="spend">{{ $t('cardForm.requirementSpend') }}</option>
+                <option value="transaction">{{ $t('cardForm.requirementTransaction') }}</option>
+              </select>
+            </div>
+            <div v-if="level.requirementType === 'spend'">
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.spendAmount') }}</label>
+              <input v-model.number="level.spendAmount" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+            <div v-if="level.requirementType === 'transaction'">
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.minTransactions') }}</label>
+              <input v-model.number="level.minTransactions" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.monthsFromOpen') }}</label>
+              <input v-model.number="level.monthsFromOpen" type="number" min="1" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.rewardPointsLevel') }}</label>
+              <input v-model.number="level.rewardPoints" type="number" min="0" step="1" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('cardForm.achievedAt') }}</label>
+              <input v-model="level.achievedAt" type="date" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+            </div>
+          </div>
+        </div>
+        <AppButton type="button" variant="outline" size="sm" @click="addLevel">{{ $t('cardForm.addLevel') }}</AppButton>
+      </div>
       <div class="border border-slate-200 bg-white p-6">
         <label class="mb-1 block text-sm font-medium text-slate-700">{{ $t('cardForm.pointsDetails') }}</label>
         <textarea v-model="form.pointsDetails" rows="3" class="block w-full border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"></textarea>
@@ -106,14 +154,16 @@ import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
+import { useTranslatedPointsType } from '../composables/useTranslatedPointsType';
 import { getCard, createCard, updateCard, refreshCardFromMilesopedia } from '../api/client';
-import { CARD_TYPES, CARD_STATUSES, POINTS_TYPES, BANKS, pointsTypeLabel } from '../constants';
+import { CARD_TYPES, CARD_STATUSES, POINTS_TYPES, BANKS } from '../constants';
 import PageHeader from '../components/PageHeader.vue';
 import AppInput from '../components/AppInput.vue';
 import AppSelect from '../components/AppSelect.vue';
 import AppButton from '../components/AppButton.vue';
 
 const { t: $t } = useI18n();
+const translatedPointsType = useTranslatedPointsType();
 
 const props = defineProps({ id: { type: String, default: null } });
 const route = useRoute();
@@ -140,11 +190,55 @@ const form = reactive({
   expenses: null,
   deadline: null,
   pointsValue: null,
+  rewardPoints: null,
   pointsDetails: null,
   milesopediaUrl: null,
   milesopediaSlug: null,
+  bonusDetails: null,
+  firstYearFree: false,
+  loungeAccess: false,
+  loungeAccessDetails: null,
+  noForeignTransactionFee: false,
+  travelInsurance: false,
+  travelInsuranceDetails: null,
   isBusiness: false,
+  bonusLevels: [],
 });
+
+function defaultLevel(order = 1) {
+  return {
+    order,
+    spendAmount: null,
+    monthsFromOpen: null,
+    requirementType: 'spend',
+    minTransactions: null,
+    rewardPoints: null,
+    achievedAt: null,
+  };
+}
+
+function addLevel() {
+  form.bonusLevels.push(defaultLevel(form.bonusLevels.length + 1));
+}
+
+function removeLevel(index) {
+  form.bonusLevels.splice(index, 1);
+  renumberLevels();
+}
+
+function moveLevel(index, delta) {
+  const newIndex = index + delta;
+  if (newIndex < 0 || newIndex >= form.bonusLevels.length) return;
+  const arr = form.bonusLevels;
+  [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+  renumberLevels();
+}
+
+function renumberLevels() {
+  form.bonusLevels.forEach((level, i) => {
+    level.order = i + 1;
+  });
+}
 
 function toForm(card) {
   form.cardName = card.cardName ?? '';
@@ -161,10 +255,32 @@ function toForm(card) {
   form.expenses = card.expenses ?? null;
   form.deadline = card.deadline ?? null;
   form.pointsValue = card.pointsValue ?? null;
+  form.rewardPoints = card.rewardPoints ?? null;
   form.pointsDetails = card.pointsDetails ?? null;
   form.milesopediaUrl = card.milesopediaUrl ?? null;
   form.milesopediaSlug = card.milesopediaSlug ?? null;
+  form.bonusDetails = card.bonusDetails ?? null;
+  form.firstYearFree = card.firstYearFree === true;
+  form.loungeAccess = card.loungeAccess === true;
+  form.loungeAccessDetails = card.loungeAccessDetails ?? null;
+  form.noForeignTransactionFee = card.noForeignTransactionFee === true;
+  form.travelInsurance = card.travelInsurance === true;
+  form.travelInsuranceDetails = card.travelInsuranceDetails ?? null;
   form.isBusiness = card.isBusiness === true;
+  const levels = card.bonusLevels && card.bonusLevels.length ? card.bonusLevels : [];
+  form.bonusLevels = levels
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((l, i) => ({
+      id: l.id,
+      order: l.order ?? i + 1,
+      spendAmount: l.spendAmount ?? null,
+      monthsFromOpen: l.monthsFromOpen ?? null,
+      requirementType: l.requirementType ?? 'spend',
+      minTransactions: l.minTransactions ?? null,
+      rewardPoints: l.rewardPoints ?? null,
+      achievedAt: l.achievedAt ?? null,
+    }));
 }
 
 function toPayload() {
@@ -183,10 +299,27 @@ function toPayload() {
     expenses: form.expenses ?? undefined,
     deadline: form.deadline || undefined,
     pointsValue: form.pointsValue ?? undefined,
+    rewardPoints: form.rewardPoints ?? undefined,
     pointsDetails: form.pointsDetails || undefined,
     milesopediaUrl: form.milesopediaUrl || undefined,
     milesopediaSlug: form.milesopediaSlug || undefined,
+    bonusDetails: form.bonusDetails || undefined,
+    firstYearFree: form.firstYearFree,
+    loungeAccess: form.loungeAccess,
+    loungeAccessDetails: form.loungeAccessDetails || undefined,
+    noForeignTransactionFee: form.noForeignTransactionFee,
+    travelInsurance: form.travelInsurance,
+    travelInsuranceDetails: form.travelInsuranceDetails || undefined,
     isBusiness: form.isBusiness,
+    bonusLevels: form.bonusLevels.map((l, i) => ({
+      order: l.order ?? i + 1,
+      spendAmount: l.spendAmount ?? undefined,
+      monthsFromOpen: l.monthsFromOpen ?? undefined,
+      requirementType: l.requirementType ?? 'spend',
+      minTransactions: l.requirementType === 'transaction' ? (l.minTransactions ?? undefined) : undefined,
+      rewardPoints: l.rewardPoints ?? undefined,
+      achievedAt: l.achievedAt || undefined,
+    })),
   };
 }
 
@@ -206,10 +339,10 @@ async function submit() {
   try {
     if (id) {
       await updateCard(id, toPayload());
-      await loadCard();
+      router.push({ name: 'CardList' });
     } else {
-      const created = await createCard(toPayload());
-      router.push(`/cards/${created.id}`);
+      await createCard(toPayload());
+      router.push({ name: 'CardList' });
     }
   } catch (e) {
     alert(e.response?.data?.error || e.message);
@@ -223,7 +356,7 @@ const statusOptions = computed(() =>
   CARD_STATUSES.map((s) => ({ value: s.value, label: $t('status.' + s.value) }))
 );
 const pointsTypeOptions = computed(() =>
-  POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))
+  POINTS_TYPES.map((p) => ({ value: p, label: translatedPointsType(p) }))
 );
 const bankOptions = computed(() => BANKS.map((b) => ({ value: b, label: b })));
 
