@@ -34,6 +34,7 @@
     <p v-if="loading" class="mt-4 text-slate-600">{{ $t('availableCards.loading') }}</p>
     <p v-else-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
     <div v-else class="mt-4 flex flex-wrap items-center gap-2">
+      <AppSelect v-model="filterCardSegment" :options="cardSegmentOptions" />
       <AppSelect v-model="filterBank" :options="bankOptions" />
       <AppSelect v-model="filterType" :options="typeOptions" />
       <AppSelect v-model="filterPointsType" :options="pointsTypeOptions" />
@@ -46,29 +47,30 @@
     </div>
     <ul v-if="!loading && !error" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <li v-for="card in pagedCards" :key="cardKey(card)" class="group flex flex-col border border-slate-200 bg-white p-5 transition hover:border-primary-200">
-        <div class="mb-2 flex items-center justify-between">
-          <BankLogo :bank="card.bank" />
-          <CardNetworkLogo :type="card.type" />
-        </div>
-        <strong class="font-display text-slate-900">{{ card.cardName }}</strong>
-        <span class="text-sm text-slate-500">{{ card.bank }} · {{ card.type }} · {{ pointsTypeLabel(card.pointsType) }}</span>
-        <div class="mt-1 flex flex-col gap-0.5 text-sm">
-          <span v-if="card.noWelcomeBonus" class="font-medium text-slate-600">{{ $t('availableCards.noWelcomeOffer') }}</span>
-          <span v-else-if="card.welcomeValueY1 != null" class="font-bold text-primary-600">{{ $t('availableCards.valueFirstYear') }}: ${{ card.welcomeValueY1 }}</span>
-          <span v-if="card.annualCost != null" class="text-slate-600">{{ $t('availableCards.annualCost') }}: ${{ card.annualCost }} {{ $t('availableCards.perYear') }}</span>
-        </div>
-        <div class="mt-auto flex flex-wrap gap-2 pt-3">
-          <AppButton :to="{ name: 'CardNew', state: { prefill: toPrefill(card) } }" variant="primary" size="sm">
-            {{ $t('availableCards.addToMyCards') }}
-          </AppButton>
-          <AppButton type="button" variant="outline" size="sm" @click="showDetails(card)">{{ $t('availableCards.details') }}</AppButton>
-          <AppButton v-if="isSuperadmin" type="button" variant="outline" size="sm" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, false)">
-            {{ rowRefreshingId === card.id ? $t('availableCards.refreshing') : $t('availableCards.refresh') }}
-          </AppButton>
-          <AppButton v-if="isSuperadmin" type="button" variant="outline" size="sm" class="border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100" :disabled="rowRefreshingId === card.id || refreshing || loading" @click="refreshOne(card, true)">
-            {{ rowRefreshingId === card.id ? $t('availableCards.refreshingWithAi') : $t('availableCards.refreshOneWithAi') }}
-          </AppButton>
-        </div>
+        <RouterLink
+          :to="{ name: 'CardDetails', params: { id: card.id }, query: { mode: 'catalogue' } }"
+          class="flex min-h-0 flex-1 flex-col text-left no-underline"
+        >
+          <div class="mb-2 flex items-center justify-between">
+            <BankLogo :bank="card.bank" />
+            <CardNetworkLogo :type="card.type" />
+          </div>
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <strong class="font-display text-slate-900">{{ card.cardName }}</strong>
+            <span v-if="card.isBusiness" class="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">{{ $t('availableCards.pme') }}</span>
+          </div>
+          <span class="text-sm text-slate-500">{{ pointsTypeLabel(card.pointsType) }}</span>
+          <div class="mt-1 flex flex-col gap-0.5 text-sm">
+            <span v-if="card.noWelcomeBonus" class="font-medium text-slate-600">{{ $t('availableCards.noWelcomeOffer') }}</span>
+            <span v-else-if="card.welcomeValueY1 != null" class="font-bold text-primary-600">{{ $t('availableCards.valueFirstYear') }}: ${{ card.welcomeValueY1 }}</span>
+            <span v-if="card.annualCost != null" class="text-slate-600">{{ $t('availableCards.annualCost') }}: ${{ card.annualCost }} {{ $t('availableCards.perYear') }}</span>
+          </div>
+          <div class="mt-auto flex flex-wrap gap-2 pt-3" @click.stop>
+            <AppButton :to="{ name: 'CardNew', state: { prefill: toPrefill(card) } }" variant="primary" size="sm">
+              {{ $t('availableCards.addToMyCards') }}
+            </AppButton>
+          </div>
+        </RouterLink>
       </li>
     </ul>
     <EmptyState v-if="!loading && !error && sortedFilteredCards.length === 0" :title="$t('availableCards.noMatch')" />
@@ -107,7 +109,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
-import { getAvailableCards, scrapeMilesopedia, refreshAvailableCard } from '../api/client';
+import { getAvailableCards, scrapeMilesopedia } from '../api/client';
 import { CARD_TYPES, BANKS, POINTS_TYPES, pointsTypeLabel } from '../constants';
 import PageHeader from '../components/PageHeader.vue';
 import AppSelect from '../components/AppSelect.vue';
@@ -124,6 +126,11 @@ const { isSuperadmin } = useAuth();
 const bankOptions = computed(() => [{ value: '', label: $t('availableCards.allBanks') }, ...BANKS.map((b) => ({ value: b, label: b }))]);
 const typeOptions = computed(() => [{ value: '', label: $t('availableCards.allTypes') }, ...CARD_TYPES.map((t) => ({ value: t, label: t }))]);
 const pointsTypeOptions = computed(() => [{ value: '', label: $t('availableCards.allPointTypes') }, ...POINTS_TYPES.map((p) => ({ value: p, label: pointsTypeLabel(p) }))]);
+const cardSegmentOptions = computed(() => [
+  { value: 'personal', label: $t('availableCards.personal') },
+  { value: 'pme', label: $t('availableCards.pme') },
+  { value: 'all', label: $t('availableCards.allSegments') },
+]);
 const sortOptions = computed(() => [
   { value: '', label: $t('availableCards.sortByName') },
   { value: 'valueY1Desc', label: $t('availableCards.sortByValueY1Desc') },
@@ -136,8 +143,8 @@ const cards = ref([]);
 const lastRefreshedAt = ref(null);
 const refreshing = ref(false);
 const refreshStartedMessage = ref('');
-const rowRefreshingId = ref(null);
 const selectedCard = ref(null);
+const filterCardSegment = ref('personal');
 const filterBank = ref('');
 const filterType = ref('');
 const filterPointsType = ref('');
@@ -150,6 +157,7 @@ const DEFAULT_SORT = 'valueY1Desc';
 
 function applyQueryToState() {
   const q = route.query;
+  filterCardSegment.value = q.segment === 'pme' || q.segment === 'all' ? q.segment : 'personal';
   filterBank.value = typeof q.bank === 'string' ? q.bank : '';
   filterType.value = typeof q.type === 'string' ? q.type : '';
   filterPointsType.value = typeof q.pointsType === 'string' ? q.pointsType : '';
@@ -161,6 +169,7 @@ function applyQueryToState() {
 
 function stateToQuery() {
   const q = {};
+  if (filterCardSegment.value !== 'personal') q.segment = filterCardSegment.value;
   if (filterBank.value) q.bank = filterBank.value;
   if (filterType.value) q.type = filterType.value;
   if (filterPointsType.value) q.pointsType = filterPointsType.value;
@@ -173,6 +182,7 @@ function stateToQuery() {
 function pushQuery() {
   const q = stateToQuery();
   const same =
+    (route.query.segment || 'personal') === (q.segment || 'personal') &&
     (route.query.bank || '') === (q.bank || '') &&
     (route.query.type || '') === (q.type || '') &&
     (route.query.pointsType || '') === (q.pointsType || '') &&
@@ -185,6 +195,8 @@ function pushQuery() {
 
 const filteredCards = computed(() => {
   let list = cards.value;
+  if (filterCardSegment.value === 'personal') list = list.filter((c) => !c.isBusiness);
+  else if (filterCardSegment.value === 'pme') list = list.filter((c) => c.isBusiness === true);
   if (filterBank.value) list = list.filter((c) => c.bank === filterBank.value);
   if (filterType.value) list = list.filter((c) => c.type === filterType.value);
   if (filterPointsType.value) list = list.filter((c) => c.pointsType === filterPointsType.value);
@@ -213,12 +225,12 @@ const pagedCards = computed(() => {
   return sortedFilteredCards.value.slice(start, start + pageSize);
 });
 
-watch([filterBank, filterType, filterPointsType, filterNoAnnualCost, sortOrder], () => {
+watch([filterCardSegment, filterBank, filterType, filterPointsType, filterNoAnnualCost, sortOrder], () => {
   page.value = 1;
 });
 
 watch(
-  () => [filterBank.value, filterType.value, filterPointsType.value, filterNoAnnualCost.value, sortOrder.value, page.value],
+  () => [filterCardSegment.value, filterBank.value, filterType.value, filterPointsType.value, filterNoAnnualCost.value, sortOrder.value, page.value],
   () => pushQuery(),
   { deep: true },
 );
@@ -251,6 +263,7 @@ function toPrefill(card) {
     milesopediaSlug: card.milesopediaSlug ?? null,
     pointsValue: card.welcomeValueY1 ?? null,
     pointsDetails: details.length ? details.join('\n') : null,
+    isBusiness: card.isBusiness === true,
   };
 }
 
@@ -312,18 +325,6 @@ async function refreshCatalog(useAi = false) {
     error.value = msg;
   } finally {
     refreshing.value = false;
-  }
-}
-
-async function refreshOne(card, useAi = false) {
-  rowRefreshingId.value = card.id;
-  try {
-    const updated = await refreshAvailableCard(card.id, useAi);
-    cards.value = cards.value.map((c) => (c.id === updated.id ? updated : c));
-  } catch (e) {
-    alert(e.response?.data?.error || e.message);
-  } finally {
-    rowRefreshingId.value = null;
   }
 }
 

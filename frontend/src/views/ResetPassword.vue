@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto max-w-sm">
-    <h1 class="text-2xl font-semibold text-slate-900">{{ $t('auth.resetTitle') }}</h1>
-    <p class="mt-1 text-slate-600">{{ $t('auth.resetIntro') }}</p>
+    <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ $t('auth.resetTitle') }}</h1>
+    <p class="mt-1 text-slate-600 dark:text-slate-400">{{ $t('auth.resetIntro') }}</p>
     <form v-if="!success" class="mt-6 space-y-4" @submit.prevent="submit">
       <div>
         <AppInput
@@ -21,7 +21,7 @@
       </AppButton>
     </form>
     <ContentCard v-else padding="md" variant="success" class="mt-6">
-      <p class="text-sm text-primary-700">{{ $t('auth.resetSuccess') }}</p>
+      <p class="text-sm text-primary-700 dark:text-primary-200">{{ $t('auth.resetSuccess') }}</p>
       <AppButton :to="user?.role === 'superadmin' ? '/available-cards' : '/cards'" variant="outline" size="sm" class="mt-3">
         {{ $t('auth.goToApp') }}
       </AppButton>

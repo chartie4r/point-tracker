@@ -17,11 +17,11 @@ export function getBankInitials(bank) {
   return bank.length >= 2 ? bank.slice(0, 2) : bank;
 }
 
-/** Card network logo URLs (World Vector Logo CDN). */
+/** Card network logo URLs (local assets in public/logos/cards/). */
 const CARD_NETWORK_LOGO_URLS = {
-  visa: 'https://cdn.worldvectorlogo.com/logos/visa-10.svg',
-  mastercard: 'https://cdn.worldvectorlogo.com/logos/mastercard-modern-design-.svg',
-  amex: 'https://cdn.worldvectorlogo.com/logos/american-express-stacked.svg',
+  visa: '/logos/cards/new_visa.svg',
+  mastercard: '/logos/cards/new_mastercard.svg',
+  amex: '/logos/cards/new_amex.svg',
 };
 
 export function getCardNetworkLogoUrl(type) {

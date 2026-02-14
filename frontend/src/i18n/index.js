@@ -128,6 +128,7 @@ const messages = {
       fetching: 'Récupération…',
       selectCardToPrefill: 'Choisir une carte pour préremplir :',
       annual: 'annuel',
+      isBusiness: 'Carte PME / entreprise',
     },
     // Card status (for filters and display)
     status: {
@@ -173,6 +174,9 @@ const messages = {
       refresh: 'Rafraîchir',
       refreshing: 'Rafraîchissement…',
       noMatch: 'Aucune carte ne correspond aux filtres.',
+      personal: 'Personnel',
+      pme: 'PME',
+      allSegments: 'Toutes',
       page: 'Page',
       prev: '‹ Préc.',
       next: 'Suiv. ›',
@@ -329,6 +333,7 @@ const messages = {
       fetching: 'Fetching…',
       selectCardToPrefill: 'Choose a card to prefill:',
       annual: 'annual',
+      isBusiness: 'PME / Business card',
     },
     // Card status (for filters and display)
     status: {
@@ -374,6 +379,9 @@ const messages = {
       refresh: 'Refresh',
       refreshing: 'Refreshing…',
       noMatch: 'No cards match your filters.',
+      personal: 'Personal',
+      pme: 'Business',
+      allSegments: 'All',
       page: 'Page',
       prev: '‹ Prev',
       next: 'Next ›',

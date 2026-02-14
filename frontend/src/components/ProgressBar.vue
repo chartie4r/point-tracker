@@ -1,12 +1,12 @@
 <template>
   <div class="w-full">
-    <div v-if="label || showPercent" class="mb-1 flex justify-between text-sm text-slate-600">
+    <div v-if="label || showPercent" class="mb-1 flex justify-between text-sm text-slate-600 dark:text-slate-400">
       <span v-if="label">{{ label }}</span>
       <span v-else></span>
       <span v-if="showPercent">{{ percent }}%</span>
     </div>
     <div
-      class="h-2 w-full overflow-hidden rounded-full bg-slate-200"
+      class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-600"
       role="progressbar"
       :aria-valuenow="value"
       :aria-valuemin="0"
@@ -32,7 +32,7 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'default',
-    validator: (v) => ['default', 'warning', 'success'].includes(v),
+    validator: (v) => ['default', 'violet', 'emerald', 'amber', 'sky', 'rose', 'teal', 'indigo', 'fuchsia', 'cyan', 'warning', 'success'].includes(v),
   },
 });
 
@@ -44,9 +44,18 @@ const percent = computed(() => {
 const barClasses = computed(() => {
   const map = {
     default: 'bg-primary-500',
+    violet: 'bg-violet-500',
+    emerald: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    sky: 'bg-sky-500',
+    rose: 'bg-rose-500',
+    teal: 'bg-teal-500',
+    indigo: 'bg-indigo-500',
+    fuchsia: 'bg-fuchsia-500',
+    cyan: 'bg-cyan-500',
     warning: 'bg-amber-500',
     success: 'bg-emerald-500',
   };
-  return map[props.variant];
+  return map[props.variant] || map.default;
 });
 </script>

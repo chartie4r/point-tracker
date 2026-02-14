@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto max-w-sm">
-    <h1 class="text-2xl font-semibold text-slate-900">{{ $t('auth.forgotTitle') }}</h1>
-    <p class="mt-1 text-slate-600">{{ $t('auth.forgotIntro') }}</p>
+    <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ $t('auth.forgotTitle') }}</h1>
+    <p class="mt-1 text-slate-600 dark:text-slate-400">{{ $t('auth.forgotIntro') }}</p>
     <form v-if="!sent" class="mt-6 space-y-4" @submit.prevent="submit">
       <AppInput v-model="email" type="email" required autocomplete="email">
         {{ $t('auth.email') }}
@@ -17,8 +17,8 @@
       </div>
     </form>
     <ContentCard v-else padding="md" variant="success" class="mt-6">
-      <p class="text-sm text-primary-700">{{ $t('auth.resetLinkSent') }}</p>
-      <p v-if="resetUrl" class="mt-2 break-all font-mono text-xs text-slate-600">{{ resetUrl }}</p>
+      <p class="text-sm text-primary-700 dark:text-primary-200">{{ $t('auth.resetLinkSent') }}</p>
+      <p v-if="resetUrl" class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ resetUrl }}</p>
       <AppButton to="/login" variant="outline" size="sm" class="mt-3">
         {{ $t('auth.backToLogin') }}
       </AppButton>

@@ -9,16 +9,16 @@
       </div>
       <template #actions>
         <AppButton to="/cards" variant="outline" size="sm">← {{ $t('snapshots.backToCards') }}</AppButton>
-        <AppButton v-if="card" :to="`/cards/${card.id}`" variant="outline" size="sm">
+        <AppButton v-if="card" :to="`/cards/${card.id}/edit`" variant="outline" size="sm">
           {{ $t('snapshots.editCard') }}
         </AppButton>
       </template>
     </PageHeader>
-    <p v-if="loadError" class="mb-4 text-sm text-red-400">{{ loadError }}</p>
+    <p v-if="loadError" class="mb-4 text-sm text-red-400 dark:text-red-400">{{ loadError }}</p>
     <template v-else-if="card">
       <ContentCard class="mb-6" padding="md">
         <template #header>
-          <h2 class="text-lg font-semibold text-slate-900">{{ $t('snapshots.addSnapshot') }}</h2>
+          <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $t('snapshots.addSnapshot') }}</h2>
         </template>
         <form @submit.prevent="addSnapshot" class="flex flex-wrap items-end gap-4">
           <div>
@@ -58,7 +58,7 @@
         </form>
       </ContentCard>
       <Panel :title="$t('snapshots.history')">
-        <p v-if="loading" class="text-slate-600">{{ $t('snapshots.loading') }}</p>
+        <p v-if="loading" class="text-slate-600 dark:text-slate-400">{{ $t('snapshots.loading') }}</p>
         <template v-else-if="snapshots.length === 0">
           <EmptyState
             :title="$t('snapshots.noSnapshots')"
@@ -67,21 +67,21 @@
         </template>
         <div v-else class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+            <thead class="bg-slate-50 dark:bg-slate-700/50">
               <tr>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">{{ $t('snapshots.weekStartCol') }}</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">{{ $t('snapshots.pointsValue') }}</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">{{ $t('snapshots.expenses') }}</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">{{ $t('snapshots.notes') }}</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">{{ $t('snapshots.weekStartCol') }}</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">{{ $t('snapshots.pointsValue') }}</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">{{ $t('snapshots.expenses') }}</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">{{ $t('snapshots.notes') }}</th>
                 <th scope="col" class="relative px-4 py-3"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 bg-white">
-              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-slate-50/50">
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.weekStartDate }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.pointsValue }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ s.expenses ?? '–' }}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">{{ s.notes || '–' }}</td>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+              <tr v-for="s in snapshots" :key="s.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.weekStartDate }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.pointsValue }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.expenses ?? '–' }}</td>
+                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.notes || '–' }}</td>
                 <td class="whitespace-nowrap px-4 py-3">
                   <AppButton type="button" variant="danger" size="sm" @click="removeSnapshot(s)">{{ $t('snapshots.delete') }}</AppButton>
                 </td>

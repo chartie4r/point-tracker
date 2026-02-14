@@ -11,7 +11,8 @@ const routes = [
   { path: '/cards', name: 'CardList', component: () => import('../views/CardList.vue'), meta: { requiresAuth: true } },
   { path: '/available-cards', name: 'AvailableCards', component: () => import('../views/AvailableCardsList.vue'), meta: { requiresAuth: true } },
   { path: '/cards/new', name: 'CardNew', component: () => import('../views/CardForm.vue'), props: { id: null }, meta: { requiresAuth: true } },
-  { path: '/cards/:id', name: 'CardEdit', component: () => import('../views/CardForm.vue'), props: true, meta: { requiresAuth: true } },
+  { path: '/cards/:id', name: 'CardDetails', component: () => import('../views/CardDetails.vue'), props: true, meta: { requiresAuth: true } },
+  { path: '/cards/:id/edit', name: 'CardEdit', component: () => import('../views/CardForm.vue'), props: true, meta: { requiresAuth: true } },
   { path: '/cards/:id/snapshots', name: 'CardSnapshots', component: () => import('../views/CardSnapshots.vue'), props: true, meta: { requiresAuth: true } },
 ];
 
@@ -33,7 +34,7 @@ router.beforeEach(async (to) => {
   if (to.meta.guest && isLoggedIn && !['ResetPassword'].includes(to.name)) {
     return { path: isSuperadmin ? '/available-cards' : '/cards' };
   }
-  // Superadmin: cards list and edit go to catalogue; CardNew is allowed when adding from catalogue (prefill checked in component)
+  // Superadmin: cards list, edit form, and snapshots redirect to catalogue; CardDetails is allowed (e.g. catalogue preview with ?mode=catalogue)
   if (isLoggedIn && isSuperadmin && ['CardList', 'CardEdit', 'CardSnapshots'].includes(to.name)) {
     return { path: '/available-cards' };
   }

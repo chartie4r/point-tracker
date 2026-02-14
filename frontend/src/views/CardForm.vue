@@ -37,6 +37,10 @@
           <AppSelect v-model="form.bank" :options="bankOptions" required>
             <template #label>{{ $t('cardForm.bank') }}</template>
           </AppSelect>
+          <div class="flex items-center gap-2 sm:col-span-2">
+            <input id="form-isBusiness" v-model="form.isBusiness" type="checkbox" class="border-slate-300 text-primary-500 focus:ring-primary-500 dark:accent-violet-500" />
+            <label for="form-isBusiness" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $t('cardForm.isBusiness') }}</label>
+          </div>
         </div>
       </div>
       <div class="border border-slate-200 bg-white p-6">
@@ -139,6 +143,7 @@ const form = reactive({
   pointsDetails: null,
   milesopediaUrl: null,
   milesopediaSlug: null,
+  isBusiness: false,
 });
 
 function toForm(card) {
@@ -159,6 +164,7 @@ function toForm(card) {
   form.pointsDetails = card.pointsDetails ?? null;
   form.milesopediaUrl = card.milesopediaUrl ?? null;
   form.milesopediaSlug = card.milesopediaSlug ?? null;
+  form.isBusiness = card.isBusiness === true;
 }
 
 function toPayload() {
@@ -180,6 +186,7 @@ function toPayload() {
     pointsDetails: form.pointsDetails || undefined,
     milesopediaUrl: form.milesopediaUrl || undefined,
     milesopediaSlug: form.milesopediaSlug || undefined,
+    isBusiness: form.isBusiness,
   };
 }
 

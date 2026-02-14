@@ -107,6 +107,11 @@ export async function getAvailableCards() {
   return { cards: data.cards ?? data, lastRefreshedAt: data.lastRefreshedAt ?? null };
 }
 
+export async function getAvailableCard(id) {
+  const { data } = await api.get(`/api/available-cards/${id}`);
+  return data;
+}
+
 /** useAi: when true, run Claude extraction for min spend / conditions. */
 export async function refreshAvailableCard(id, useAi = false) {
   const url = useAi ? `/api/available-cards/${id}/refresh?useAi=true` : `/api/available-cards/${id}/refresh`;

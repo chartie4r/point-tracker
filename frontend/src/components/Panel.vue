@@ -1,7 +1,7 @@
 <template>
-  <div class="border border-slate-200 bg-white">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
-      <h2 class="text-lg font-semibold text-slate-900">
+  <div class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-600 px-6 py-4">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
         {{ title }}
       </h2>
       <AppButton

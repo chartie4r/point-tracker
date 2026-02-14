@@ -16,11 +16,11 @@
       :step="step"
       :disabled="disabled"
       :autocomplete="autocomplete"
-      class="block w-full border bg-white py-2 px-3 text-sm text-slate-900 placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
+      class="block w-full border bg-white dark:bg-slate-800 py-2 px-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:focus:border-violet-500 dark:focus:ring-violet-500 disabled:opacity-50"
       :class="inputClasses"
       @input="$emit('update:modelValue', $event.target.value)"
     />
-    <p v-if="error" class="mt-1 text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
   </div>
 </template>
 
@@ -48,6 +48,6 @@ defineEmits(['update:modelValue']);
 const inputId = computed(() => `app-input-${Math.random().toString(36).slice(2, 9)}`);
 
 const inputClasses = computed(() =>
-  props.error ? 'border-red-500' : 'border-slate-200'
+  props.error ? 'border-red-500 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
 );
 </script>

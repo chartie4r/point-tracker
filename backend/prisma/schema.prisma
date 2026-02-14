@@ -41,15 +41,40 @@ model Card {
   expenses             Int?
   deadline             DateTime?
   pointsValue          Int?      @map("points_value")
+  rewardPoints         Int?      @map("reward_points")
   pointsDetails        String?   @map("points_details")
   milesopediaUrl       String?   @map("milesopedia_url")
   milesopediaSlug      String?   @map("milesopedia_slug")
+  bonusDetails         String?   @map("bonus_details")
+  firstYearFree        Boolean   @default(false) @map("first_year_free")
+  loungeAccess         Boolean   @default(false) @map("lounge_access")
+  loungeAccessDetails  String?   @map("lounge_access_details")
+  noForeignTransactionFee Boolean @default(false) @map("no_foreign_transaction_fee")
+  travelInsurance      Boolean   @default(false) @map("travel_insurance")
+  travelInsuranceDetails String?  @map("travel_insurance_details")
+  isBusiness           Boolean   @default(false) @map("is_business")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   snapshots            WeeklySnapshot[]
+  bonusLevels          CardBonusLevel[]
 
   @@map("cards")
+}
+
+model CardBonusLevel {
+  id               String    @id @default(uuid())
+  cardId           String    @map("card_id")
+  card             Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  order            Int       @map("order")
+  spendAmount      Int?      @map("spend_amount")
+  monthsFromOpen   Int?      @map("months_from_open")
+  requirementType  String    @map("requirement_type") // "spend" | "transaction"
+  minTransactions  Int?      @map("min_transactions")
+  rewardPoints     Int?      @map("reward_points")
+  achievedAt       DateTime? @map("achieved_at")
+
+  @@map("card_bonus_levels")
 }
 
 model WeeklySnapshot {
@@ -82,11 +107,33 @@ model ScrapedCard {
   bonusDetails    String?  @map("bonus_details")
   milesopediaUrl  String?  @map("milesopedia_url")
   milesopediaSlug String   @map("milesopedia_slug")
+  subscribeUrl    String?  @map("subscribe_url")
+  firstYearFree   Boolean  @default(false) @map("first_year_free")
+  loungeAccess    Boolean  @default(false) @map("lounge_access")
+  loungeAccessDetails String? @map("lounge_access_details")
+  noForeignTransactionFee Boolean @default(false) @map("no_foreign_transaction_fee")
+  travelInsurance Boolean  @default(false) @map("travel_insurance")
+  travelInsuranceDetails String? @map("travel_insurance_details")
+  isBusiness      Boolean  @default(false) @map("is_business")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  bonusLevels     ScrapedBonusLevel[]
+
   @@unique([milesopediaSlug])
   @@map("scraped_cards")
+}
+
+model ScrapedBonusLevel {
+  id               String     @id @default(uuid())
+  scrapedCardId    String     @map("scraped_card_id")
+  scrapedCard      ScrapedCard @relation(fields: [scrapedCardId], references: [id], onDelete: Cascade)
+  order            Int        @map("order")
+  spendAmount      Int?       @map("spend_amount")
+  monthsFromOpen   Int?       @map("months_from_open")
+  rewardPoints     Int?       @map("reward_points")
+
+  @@map("scraped_bonus_levels")
 }
 
 // Single row: when the full catalog was last refreshed from Milesopedia

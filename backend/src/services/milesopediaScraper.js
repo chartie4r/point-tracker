@@ -6,6 +6,7 @@ import { extractCardDataWithAi, isAiExtractionEnabled } from './milesopediaAiExt
 const BASE_URL = 'https://milesopedia.com';
 const SITEMAP_URL = `${BASE_URL}/card-sitemap.xml`;
 const RATE_LIMIT_MS = Number(process.env.SCRAPER_RATE_LIMIT_MS) || 3000;
+const SCRAPE_CONCURRENCY = Number(process.env.SCRAPER_CONCURRENCY) || 5;
 const USE_PUPPETEER = process.env.SCRAPER_USE_PUPPETEER === 'true';
 
 /** Whether the full catalog refresh (scrapeMilesopediaCards) will use Puppeteer for card pages. */
@@ -127,7 +128,11 @@ function pointsTypeFromSlug(slugNorm) {
   if (s.includes('scene')) return 'Scene';
   if (s.includes('cashback')) return 'Cashback';
   if (s.includes('viporter') || s.includes('vip-porter')) return 'VIP_Porter';
+  if ((s.includes('privilege') || s.includes('privileges')) && (s.includes('amex') || s.includes('american-express'))) return 'Amex_Privileges';
   if (s.includes('privilege')) return 'Aeroplan';
+  if (s.includes('avios') || s.includes('british-airways')) return 'Avios';
+  if (s.includes('bmo') && (s.includes('recompenses') || s.includes('rewards'))) return 'BMO_Recompenses';
+  if (s.includes('westjet')) return 'WestJet_Rewards';
   if (s.includes('bnc') && (s.includes('recompenses') || s.includes('rewards'))) return 'BNC';
   if (s.includes('bnc')) return 'BNC';
   if (s.includes('td')) return 'TD';
@@ -215,8 +220,24 @@ function extractEmbeddedCardData(html) {
     const m = html.match(re);
     if (m && m[1]) {
       const v = normalize(m[1]);
+      if ((v.includes('privilege') || v.includes('privileges')) && (v.includes('amex') || v.includes('american'))) {
+        out.pointsType = 'Amex_Privileges';
+        break;
+      }
       if (v.includes('aeroplan') || v.includes('privilege')) {
         out.pointsType = 'Aeroplan';
+        break;
+      }
+      if (v.includes('avios') || (v.includes('british') && v.includes('airways'))) {
+        out.pointsType = 'Avios';
+        break;
+      }
+      if (v.includes('bmo') && (v.includes('recompenses') || v.includes('rewards'))) {
+        out.pointsType = 'BMO_Recompenses';
+        break;
+      }
+      if (v.includes('westjet')) {
+        out.pointsType = 'WestJet_Rewards';
         break;
       }
       if (v.includes('avion')) {
@@ -447,35 +468,44 @@ export async function scrapeMilesopediaCards(options = {}) {
     bonusDetails: c.bonusDetails ?? null,
     milesopediaUrl: c.milesopediaUrl ?? null,
     milesopediaSlug: c.milesopediaSlug,
+    isBusiness: c.isBusiness === true,
   });
 
-  for (let i = 0; i < cardLinks.length; i++) {
-    const { url, slug } = cardLinks[i];
+  async function processOne(link) {
+    const { url, slug } = link;
     try {
       const pageHtml = await fetchCardPage(url, browser);
-      await delay(RATE_LIMIT_MS);
       let card = parseCardDetail(pageHtml, url, slug);
       if (useAi) card = await mergeAiExtraction(pageHtml, card);
-      if (!card.cardName) continue;
-      results.push(card);
-
-      try {
-        await prisma.scrapedCard.upsert({
-          where: { milesopediaSlug: card.milesopediaSlug },
-          create: dbPayload(card),
-          update: dbPayload(card),
-        });
-        console.log(`[Milesopedia] DB updated: ${card.cardName} (${card.bank}, ${card.milesopediaSlug})`);
-      } catch (dbErr) {
-        console.warn(`[Milesopedia] DB upsert failed for ${card.milesopediaSlug}:`, dbErr.message);
-      }
-
-      if ((i + 1) % 20 === 0 || i === total - 1) {
-        console.log(`[Milesopedia] Progress: ${i + 1}/${total} pages, ${results.length} card(s) parsed & saved`);
-      }
+      if (!card.cardName) return null;
+      return card;
     } catch (e) {
       console.warn(`[Milesopedia] Skip ${url}:`, e.message);
+      return null;
     }
+  }
+
+  async function saveCard(card) {
+    try {
+      await prisma.scrapedCard.upsert({
+        where: { milesopediaSlug: card.milesopediaSlug },
+        create: dbPayload(card),
+        update: dbPayload(card),
+      });
+      console.log(`[Milesopedia] DB updated: ${card.cardName} (${card.bank}, ${card.milesopediaSlug})`);
+    } catch (dbErr) {
+      console.warn(`[Milesopedia] DB upsert failed for ${card.milesopediaSlug}:`, dbErr.message);
+    }
+  }
+
+  for (let i = 0; i < cardLinks.length; i += SCRAPE_CONCURRENCY) {
+    const chunk = cardLinks.slice(i, i + SCRAPE_CONCURRENCY);
+    const cards = await Promise.all(chunk.map(processOne));
+    const valid = cards.filter(Boolean);
+    results.push(...valid);
+    await Promise.all(valid.map(saveCard));
+    console.log(`[Milesopedia] Progress: ${Math.min(i + SCRAPE_CONCURRENCY, total)}/${total} pages, ${results.length} card(s) parsed & saved`);
+    if (i + SCRAPE_CONCURRENCY < cardLinks.length) await delay(RATE_LIMIT_MS);
   }
 
   if (browser) {
@@ -751,6 +781,12 @@ function parseCardDetail(html, url, slug) {
   // When card explicitly has no welcome offer, set first year value to 0
   const finalWelcomeValueY1 = noWelcomeBonus ? 0 : (welcomeValueY1 ?? null);
 
+  const nameForBusiness = (cardName || '').toLowerCase();
+  const slugForBusiness = (slug || '').toLowerCase().replace(/-/g, ' ');
+  const businessInName = /entreprise|enterprise/.test(nameForBusiness);
+  const businessInSlug = /entreprise|enterprise|affaires|business/.test(slugForBusiness);
+  const isBusiness = businessInName || businessInSlug;
+
   return {
     cardName: cardName || 'Unknown',
     type: type || 'VISA',
@@ -766,5 +802,6 @@ function parseCardDetail(html, url, slug) {
     bonusDetails,
     milesopediaUrl: url,
     milesopediaSlug: slug,
+    isBusiness,
   };
 }

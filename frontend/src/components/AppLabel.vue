@@ -2,13 +2,13 @@
   <label
     v-if="labelFor"
     :for="labelFor"
-    class="block text-sm font-medium text-slate-700 mb-1"
+    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
   >
     <slot />
   </label>
   <span
     v-else
-    class="block text-sm font-medium text-slate-700 mb-1"
+    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
   >
     <slot />
   </span>

@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 const CARD_TYPE = ['VISA', 'MASTERCARD', 'AMEX'];
 const CARD_STATUS = ['Open', 'Closed', 'Refused', 'To_Open'];
-const POINTS_TYPE = ['Aeroplan', 'BNC', 'Marriott_Bonvoy', 'CIBC', 'RBC', 'Cashback', 'Scene', 'TD', 'VIP_Porter'];
+const POINTS_TYPE = ['Aeroplan', 'Amex_Privileges', 'Avios', 'BMO_Recompenses', 'BNC', 'Marriott_Bonvoy', 'CIBC', 'RBC', 'Cashback', 'Scene', 'TD', 'VIP_Porter', 'WestJet_Rewards'];
 const BANK = ['AMEX', 'BMO', 'BNC', 'CIBC', 'RBC', 'Scotia', 'TD'];
 
 function validateCardBody(body, isUpdate = false) {
@@ -100,6 +100,7 @@ function toCardPayload(body) {
   if (body.pointsDetails !== undefined) payload.pointsDetails = body.pointsDetails == null ? null : String(body.pointsDetails);
   if (body.milesopediaUrl !== undefined) payload.milesopediaUrl = body.milesopediaUrl == null ? null : String(body.milesopediaUrl);
   if (body.milesopediaSlug !== undefined) payload.milesopediaSlug = body.milesopediaSlug == null ? null : String(body.milesopediaSlug);
+  if (body.isBusiness !== undefined) payload.isBusiness = body.isBusiness === true;
   return payload;
 }
 
@@ -125,6 +126,7 @@ function serializeCard(card) {
     pointsDetails: card.pointsDetails,
     milesopediaUrl: card.milesopediaUrl,
     milesopediaSlug: card.milesopediaSlug,
+    isBusiness: card.isBusiness === true,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
@@ -156,10 +158,13 @@ export async function listCards(userId) {
 export async function getCard(id, userId) {
   const card = await prisma.card.findFirst({
     where: { id, userId: userId || null },
-    include: { snapshots: { orderBy: { weekStartDate: 'desc' } } },
+    include: {
+      snapshots: { orderBy: { weekStartDate: 'desc' } },
+      bonusLevels: { orderBy: { order: 'asc' } },
+    },
   });
   if (!card) return null;
-  return {
+  const out = {
     ...serializeCard(card),
     snapshots: card.snapshots.map((s) => ({
       id: s.id,
@@ -171,6 +176,16 @@ export async function getCard(id, userId) {
       createdAt: s.createdAt.toISOString(),
     })),
   };
+  if (card.bonusLevels && card.bonusLevels.length) {
+    out.bonusLevels = card.bonusLevels.map((l) => ({
+      id: l.id,
+      order: l.order,
+      spendAmount: l.spendAmount,
+      monthsFromOpen: l.monthsFromOpen,
+      rewardPoints: l.rewardPoints,
+    }));
+  }
+  return out;
 }
 
 export async function createCard(body, userId) {
@@ -240,7 +255,6 @@ export async function refreshCardFromMilesopedia(id, userId) {
   const scraped = await scrapeSingleMilesopediaCard(url);
 
   const updatePayload = toCardPayload({
-    // Only update fields that come from Milesopedia
     cardName: scraped.cardName,
     type: scraped.type,
     pointsType: scraped.pointsType,
@@ -248,6 +262,7 @@ export async function refreshCardFromMilesopedia(id, userId) {
     annualCost: scraped.annualCost,
     milesopediaUrl: scraped.milesopediaUrl || url,
     milesopediaSlug: scraped.milesopediaSlug,
+    isBusiness: scraped.isBusiness,
   });
 
   const updated = await prisma.card.update({

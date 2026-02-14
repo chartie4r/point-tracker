@@ -46,10 +46,10 @@ const sizeClasses = computed(() => {
 
 const variantClasses = computed(() => {
   const map = {
-    primary: 'border-2 border-violet-500 bg-violet-500 text-white hover:bg-violet-600 hover:border-violet-600',
-    secondary: 'border-2 border-slate-200 bg-white text-slate-800 hover:bg-slate-50',
-    outline: 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-    danger: 'border-2 border-red-500 bg-red-500 text-white hover:bg-red-600 hover:border-red-600',
+    primary: 'border-2 border-violet-500 bg-violet-500 text-white hover:bg-violet-600 hover:border-violet-600 dark:border-violet-500 dark:bg-violet-500 dark:hover:bg-violet-600 dark:hover:border-violet-600',
+    secondary: 'border-2 border-slate-200 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700',
+    outline: 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700',
+    danger: 'border-2 border-red-500 bg-red-500 text-white hover:bg-red-600 hover:border-red-600 dark:border-red-500 dark:bg-red-600 dark:hover:bg-red-700 dark:hover:border-red-700',
   };
   return map[props.variant];
 });

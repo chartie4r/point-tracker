@@ -5,10 +5,16 @@ const mockPrisma = {
   card: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
   },
+  cardBonusLevel: {
+    createMany: vi.fn().mockResolvedValue(undefined),
+    deleteMany: vi.fn().mockResolvedValue(undefined),
+  },
+  $transaction: vi.fn(async (cb) => cb(mockPrisma)),
 };
 vi.mock('@prisma/client', () => ({
   PrismaClient: vi.fn(() => mockPrisma),
@@ -91,6 +97,28 @@ describe('cardService', () => {
       });
     });
 
+    it('throws ValidationError when bonusLevels is not an array', async () => {
+      await expect(cardService.createCard({ ...validBody, bonusLevels: 'invalid' }, 'user-1')).rejects.toMatchObject({
+        name: 'ValidationError',
+        message: 'bonusLevels must be an array',
+      });
+    });
+
+    it('throws ValidationError when bonusLevel requirementType is invalid', async () => {
+      await expect(
+        cardService.createCard(
+          {
+            ...validBody,
+            bonusLevels: [{ order: 1, requirementType: 'invalid', spendAmount: 1000, monthsFromOpen: 3 }],
+          },
+          'user-1',
+        ),
+      ).rejects.toMatchObject({
+        name: 'ValidationError',
+        message: expect.stringContaining('requirementType must be one of'),
+      });
+    });
+
     it('accepts valid body and does not throw (create is mocked)', async () => {
       const createdAt = new Date('2024-01-01T00:00:00.000Z');
       const updatedAt = new Date('2024-01-02T00:00:00.000Z');
@@ -111,6 +139,7 @@ describe('cardService', () => {
         expenses: null,
         deadline: null,
         pointsValue: null,
+        rewardPoints: null,
         pointsDetails: null,
         milesopediaUrl: null,
         milesopediaSlug: null,
@@ -118,6 +147,7 @@ describe('cardService', () => {
         updatedAt,
       };
       mockPrisma.card.create.mockResolvedValueOnce(mockCard);
+      mockPrisma.card.findUnique.mockResolvedValueOnce({ ...mockCard, bonusLevels: [] });
 
       const result = await cardService.createCard(validBody, 'user-1');
       expect(result).not.toBeNull();

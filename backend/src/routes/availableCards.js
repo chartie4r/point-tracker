@@ -6,8 +6,18 @@ import { requireSuperadmin } from '../middleware/auth.js';
 export const availableCardsRouter = Router();
 const prisma = new PrismaClient();
 
-function serialize(card) {
+function serializeLevel(level) {
   return {
+    id: level.id,
+    order: level.order,
+    spendAmount: level.spendAmount,
+    monthsFromOpen: level.monthsFromOpen,
+    rewardPoints: level.rewardPoints,
+  };
+}
+
+function serialize(card) {
+  const out = {
     id: card.id,
     cardName: card.cardName,
     type: card.type,
@@ -22,9 +32,14 @@ function serialize(card) {
     bonusDetails: card.bonusDetails,
     milesopediaUrl: card.milesopediaUrl,
     milesopediaSlug: card.milesopediaSlug,
+    isBusiness: card.isBusiness === true,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
+  if (card.bonusLevels && card.bonusLevels.length) {
+    out.bonusLevels = card.bonusLevels.map(serializeLevel);
+  }
+  return out;
 }
 
 availableCardsRouter.get('/', async (req, res) => {
@@ -35,6 +50,21 @@ availableCardsRouter.get('/', async (req, res) => {
     ]);
     const lastRefreshedAt = catalogRefresh?.completedAt?.toISOString() ?? null;
     res.json({ cards: cards.map(serialize), lastRefreshedAt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+availableCardsRouter.get('/:id', async (req, res) => {
+  try {
+    const card = await prisma.scrapedCard.findUnique({
+      where: { id: req.params.id },
+      include: { bonusLevels: { orderBy: { order: 'asc' } } },
+    });
+    if (!card) {
+      return res.status(404).json({ error: 'Catalog card not found' });
+    }
+    res.json(serialize(card));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -74,6 +104,7 @@ availableCardsRouter.post('/:id/refresh', requireSuperadmin, async (req, res) =>
         bonusDetails: scraped.bonusDetails ?? null,
         milesopediaUrl: scraped.milesopediaUrl || existing.milesopediaUrl,
         milesopediaSlug: scraped.milesopediaSlug || existing.milesopediaSlug,
+        isBusiness: scraped.isBusiness === true,
       },
     });
 
