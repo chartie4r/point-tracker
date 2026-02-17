@@ -71,6 +71,22 @@ LINEAR_LABEL_IDS=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 If you still see `LINEAR_TEAM_ID is required for --apply`, verify there is no typo, no surrounding spaces in key names, and that the script is run from repository root.
 
+If you see `Authentication required, not authenticated` (401):
+- Ensure `LINEAR_API_KEY` (or `LINEAR_KEY`) is a valid **Linear Personal API key**.
+- Remove inline comments from the value unless quoted correctly.
+- Avoid wrapping values with extra quotes copied from docs/UI.
+- Re-run with a dry run first to confirm env loading:
+
+```bash
+npm run roadmap:create:dry
+```
+
+Then run apply:
+
+```bash
+npm run roadmap:create
+```
+
 ### Output report
 
 Every run writes:

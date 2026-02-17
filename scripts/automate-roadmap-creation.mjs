@@ -23,18 +23,23 @@ function loadDotEnvFile(filePath) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
 
-    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    const normalized = line.startsWith('export ') ? line.slice('export '.length).trim() : line;
+    const match = normalized.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
     if (!match) continue;
 
     const [, key, rawValue] = match;
     if (process.env[key] !== undefined) continue;
 
-    let value = rawValue;
+    let value = rawValue.trim();
     if (
       (value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))
     ) {
       value = value.slice(1, -1);
+    } else {
+      // Support inline comments in .env for unquoted values:
+      // LINEAR_API_KEY=abc123 # personal token
+      value = value.split(/\s+#/, 1)[0].trim();
     }
 
     process.env[key] = value;
@@ -117,6 +122,22 @@ async function linearGraphQL(query, variables) {
   return payload.data;
 }
 
+async function assertLinearAuth() {
+  const query = `
+    query ViewerCheck {
+      viewer { id name email }
+    }
+  `;
+  try {
+    await linearGraphQL(query, {});
+  } catch (error) {
+    throw new Error(
+      'Linear authentication failed. Verify LINEAR_API_KEY/LINEAR_KEY is a valid Linear personal API key (no extra quotes/comments), and that .env uses KEY=VALUE format. Original error: '
+      + error.message,
+    );
+  }
+}
+
 async function createLinearIssue({ teamId, title, description, parentId, labelIds = [] }) {
   const query = `
     mutation IssueCreate($input: IssueCreateInput!) {
@@ -150,6 +171,10 @@ async function runLinearCreation() {
 
   const createdEpics = new Map();
   const output = { epics: [], ideas: [], tech: [] };
+
+  if (!dryRun) {
+    await assertLinearAuth();
+  }
 
   for (const epic of epics) {
     if (dryRun) {
