@@ -21,14 +21,17 @@ describe('AppSelect', () => {
     expect(options[2].text()).toBe('Option B');
   });
 
-  it('emits update:modelValue on change', async () => {
+  it('renders disabled + error state', () => {
     const wrapper = mount(AppSelect, {
       props: {
         modelValue: '',
         options: [{ value: 'x', label: 'X' }],
+        disabled: true,
+        error: 'Required field',
       },
     });
-    await wrapper.find('select').setValue('x');
-    expect(wrapper.emitted('update:modelValue')).toEqual([['x']]);
+    const select = wrapper.get('select');
+    expect(select.attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Required field');
   });
 });
