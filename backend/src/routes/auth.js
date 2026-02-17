@@ -88,7 +88,7 @@ authRouter.post('/forgot-password', async (req, res) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('[Auth] Password reset link:', resetUrl);
     }
-    res.json({ message: 'If an account exists, a reset link was sent.', resetUrl });
+    res.json({ message: 'If an account exists, a reset link was sent.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
