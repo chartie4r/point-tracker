@@ -20,6 +20,27 @@
         />
       </template>
     </PageHeader>
+    <section v-if="!loading && !error && cards.length" class="mb-5">
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Program points tracker</h2>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ContentCard
+          v-for="program in pointsProgramSummary"
+          :key="program.pointsType"
+          :tint="getPointsTypeAccent(program.pointsType)"
+          padding="md"
+        >
+          <template #header>
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ translatedPointsType(program.pointsType) }}</p>
+            <p class="text-xl font-bold" :class="accentTextClass(program.pointsType)">{{ formatRewardPoints(program.totalRewardPoints) }}</p>
+          </template>
+          <div class="text-sm text-slate-600 dark:text-slate-300">
+            <p>{{ program.cardCount }} card<span v-if="program.cardCount > 1">s</span></p>
+            <p>Tracked value: {{ formatDollars(program.totalPointsValue) }}</p>
+          </div>
+        </ContentCard>
+      </div>
+    </section>
+
     <p v-if="loading" class="text-slate-600 dark:text-slate-400">{{ $t('cardList.loading') }}</p>
     <p v-else-if="error" class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
     <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -149,6 +170,24 @@ const filteredCards = computed(() => {
   if (filterBank.value) list = list.filter((c) => c.bank === filterBank.value);
   if (filterPointsType.value) list = list.filter((c) => c.pointsType === filterPointsType.value);
   return list;
+});
+
+const pointsProgramSummary = computed(() => {
+  const groups = new Map();
+  for (const card of cards.value) {
+    const key = card.pointsType || 'Unknown';
+    const row = groups.get(key) || {
+      pointsType: key,
+      cardCount: 0,
+      totalRewardPoints: 0,
+      totalPointsValue: 0,
+    };
+    row.cardCount += 1;
+    row.totalRewardPoints += Number(card.rewardPoints || 0);
+    row.totalPointsValue += Number(card.pointsValue || 0);
+    groups.set(key, row);
+  }
+  return [...groups.values()].sort((a, b) => b.totalRewardPoints - a.totalRewardPoints);
 });
 
 function statusLabel(status) {
