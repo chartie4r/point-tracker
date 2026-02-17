@@ -16,7 +16,67 @@ Outputs:
 
 ---
 
-## How to copy into Linear (manual workflow)
+## Automated creation (recommended)
+
+A helper script can create Linear and GitHub issues directly from the generated draft files.
+
+### Script
+
+- `scripts/automate-roadmap-creation.mjs`
+
+### Dry run (safe preview)
+
+```bash
+npm run roadmap:create:dry
+```
+
+Equivalent:
+
+```bash
+node scripts/automate-roadmap-creation.mjs --all
+```
+
+### Apply (actually creates issues)
+
+```bash
+npm run roadmap:create
+```
+
+Equivalent:
+
+```bash
+node scripts/automate-roadmap-creation.mjs --all --apply
+```
+
+### Required environment variables
+
+#### For Linear (`--linear` or `--all --apply`)
+
+- `LINEAR_API_KEY` – Linear API key.
+- `LINEAR_TEAM_ID` – target Linear team id.
+
+Optional:
+- `LINEAR_LABEL_IDS` – comma-separated label ids (for example, your `Migrated` label id).
+
+#### For GitHub (`--github` or `--all --apply`)
+
+- `GITHUB_TOKEN` – GitHub token with `repo` issue permissions.
+- `GITHUB_REPO` – `owner/repo` (for example `chartie4r/point-tracker`).
+
+Optional:
+- `GITHUB_LABELS` – comma-separated labels to apply.
+
+### Output report
+
+Every run writes:
+
+- `roadmap-migration/creation-report.json`
+
+This report includes created issue identifiers/URLs (or dry-run entries).
+
+---
+
+## How to copy manually into Linear (fallback workflow)
 
 Use `roadmap-migration/linear-migration-drafts.md`.
 
@@ -53,7 +113,7 @@ For each created issue, ensure:
 
 ---
 
-## How to copy into GitHub (manual workflow)
+## How to copy manually into GitHub (fallback workflow)
 
 Use `roadmap-migration/github-implementation-issue-drafts.md`.
 
