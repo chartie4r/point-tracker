@@ -3,6 +3,9 @@
   "type": "module",
   "scripts": {
     "build": "cd backend && npx prisma generate --schema=prisma/schema.postgres.prisma && cd ../frontend && npm run build",
-    "build:local": "cd backend && npx prisma generate && cd ../frontend && npm run build"
+    "build:local": "cd backend && npx prisma generate && cd ../frontend && npm run build",
+    "roadmap:migration": "node scripts/generate-roadmap-ticket-drafts.mjs",
+    "roadmap:create:dry": "node scripts/automate-roadmap-creation.mjs --linear",
+    "roadmap:create": "node scripts/automate-roadmap-creation.mjs --linear --apply"
   }
 }
