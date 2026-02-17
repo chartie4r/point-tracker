@@ -15,6 +15,42 @@ if (!runLinear) {
 
 const linearFile = path.join(root, 'roadmap-migration/linear-migration-drafts.md');
 
+function loadDotEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match) continue;
+
+    const [, key, rawValue] = match;
+    if (process.env[key] !== undefined) continue;
+
+    let value = rawValue;
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    process.env[key] = value;
+  }
+}
+
+loadDotEnvFile(path.join(root, '.env'));
+loadDotEnvFile(path.join(root, '.env.local'));
+
+function envFirst(...keys) {
+  for (const key of keys) {
+    if (process.env[key]) return process.env[key];
+  }
+  return undefined;
+}
+
 const read = (file) => fs.readFileSync(file, 'utf8');
 
 function section(content, startHeading, endHeading) {
@@ -62,7 +98,7 @@ function parseLinearTech(content) {
 }
 
 async function linearGraphQL(query, variables) {
-  const apiKey = process.env.LINEAR_API_KEY;
+  const apiKey = envFirst('LINEAR_API_KEY', 'LINEAR_KEY');
   if (!apiKey) throw new Error('LINEAR_API_KEY is required for --apply');
 
   const response = await fetch('https://api.linear.app/graphql', {
@@ -104,8 +140,8 @@ function toMarkdownDesc(text) {
 }
 
 async function runLinearCreation() {
-  const teamId = process.env.LINEAR_TEAM_ID;
-  const labelIds = (process.env.LINEAR_LABEL_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const teamId = envFirst('LINEAR_TEAM_ID', 'LINEAR_TEAM', 'TEAM_ID');
+  const labelIds = (envFirst('LINEAR_LABEL_IDS') || '').split(',').map((s) => s.trim()).filter(Boolean);
 
   const content = read(linearFile);
   const epics = parseLinearEpics(content);

@@ -55,6 +55,22 @@ node scripts/automate-roadmap-creation.mjs --linear --apply
 Optional:
 - `LINEAR_LABEL_IDS` – comma-separated label ids (for example, your `Migrated` label id).
 
+The script loads env vars from `.env` and `.env.local` automatically.
+
+Supported aliases:
+- API key: `LINEAR_API_KEY` or `LINEAR_KEY`
+- Team id: `LINEAR_TEAM_ID` or `LINEAR_TEAM` or `TEAM_ID`
+
+Example `.env`:
+
+```bash
+LINEAR_API_KEY=lin_api_xxx
+LINEAR_TEAM_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+LINEAR_LABEL_IDS=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+If you still see `LINEAR_TEAM_ID is required for --apply`, verify there is no typo, no surrounding spaces in key names, and that the script is run from repository root.
+
 ### Output report
 
 Every run writes:
