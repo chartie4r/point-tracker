@@ -10,9 +10,8 @@ npm run roadmap:migration
 
 (or `node scripts/generate-roadmap-ticket-drafts.mjs`)
 
-Outputs:
+Output:
 - `roadmap-migration/linear-migration-drafts.md`
-- `roadmap-migration/github-implementation-issue-drafts.md` (optional reference only)
 
 ---
 
