@@ -33,10 +33,10 @@ describe('logos', () => {
   });
 
   describe('getCardNetworkLogoUrl', () => {
-    it('returns CDN URL for visa, mastercard, amex', () => {
-      expect(getCardNetworkLogoUrl('VISA')).toBe('https://cdn.worldvectorlogo.com/logos/visa-10.svg');
-      expect(getCardNetworkLogoUrl('MASTERCARD')).toBe('https://cdn.worldvectorlogo.com/logos/mastercard-modern-design-.svg');
-      expect(getCardNetworkLogoUrl('AMEX')).toBe('https://cdn.worldvectorlogo.com/logos/american-express-stacked.svg');
+    it('returns local logo path for visa, mastercard, amex', () => {
+      expect(getCardNetworkLogoUrl('VISA')).toBe('/logos/cards/new_visa.svg');
+      expect(getCardNetworkLogoUrl('MASTERCARD')).toBe('/logos/cards/new_mastercard.svg');
+      expect(getCardNetworkLogoUrl('AMEX')).toBe('/logos/cards/new_amex.svg');
     });
 
     it('returns null for unknown type', () => {
