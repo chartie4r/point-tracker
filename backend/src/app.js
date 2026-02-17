@@ -9,6 +9,8 @@ import { availableCardsRouter } from './routes/availableCards.js';
 import { authRouter } from './routes/auth.js';
 import { requireAuth, requireSuperadmin } from './middleware/auth.js';
 import { ensureSuperadminFromConfig } from './services/authService.js';
+import { createAuthRateLimiterFromEnv } from './middleware/rateLimit.js';
+import { PrismaClient } from '@prisma/client';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'point-tracker-dev-secret-change-in-production';
@@ -30,6 +32,8 @@ async function ensureSuperadminOnce() {
 }
 
 const app = express();
+const prisma = new PrismaClient();
+const authRateLimiter = createAuthRateLimiterFromEnv();
 app.set('trust proxy', 1);
 app.use(async (req, res, next) => {
   await ensureSuperadminOnce();
@@ -56,7 +60,7 @@ app.use(
   }),
 );
 
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/cards', requireAuth, cardsRouter);
 // Catalogue (GET list + GET single) is public; POST :id/refresh requires auth in route
 app.use('/api/available-cards', availableCardsRouter);
@@ -64,7 +68,27 @@ app.use('/api/scrape', requireAuth, requireSuperadmin, scraperRouter);
 app.use('/api', requireAuth, snapshotsRouter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', environment: process.env.NODE_ENV || 'development' });
+});
+
+app.get('/api/readiness', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({
+      status: 'ready',
+      checks: {
+        database: 'ok',
+      },
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: 'not_ready',
+      checks: {
+        database: 'error',
+      },
+      error: error.message,
+    });
+  }
 });
 
 export default app;
