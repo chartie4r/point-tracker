@@ -10,7 +10,12 @@ import { authRouter } from './routes/auth.js';
 import { requireAuth, requireSuperadmin } from './middleware/auth.js';
 import { ensureSuperadminFromConfig } from './services/authService.js';
 
+const isProduction = process.env.NODE_ENV === 'production';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'point-tracker-dev-secret-change-in-production';
+
+if (isProduction && (!process.env.SESSION_SECRET || SESSION_SECRET === 'point-tracker-dev-secret-change-in-production')) {
+  throw new Error('[Config] SESSION_SECRET must be set in production and cannot use the default dev value');
+}
 
 let superadminInitDone = false;
 async function ensureSuperadminOnce() {
