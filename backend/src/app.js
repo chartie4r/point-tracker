@@ -9,6 +9,7 @@ import { availableCardsRouter } from './routes/availableCards.js';
 import { authRouter } from './routes/auth.js';
 import { requireAuth, requireSuperadmin } from './middleware/auth.js';
 import { ensureSuperadminFromConfig } from './services/authService.js';
+import { assertVercelProductionReadiness } from './config/runtimeConfig.js';
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'point-tracker-dev-secret-change-in-production';
 
@@ -23,6 +24,8 @@ async function ensureSuperadminOnce() {
     console.error('[Config] ensureSuperadmin failed:', err.message);
   }
 }
+
+assertVercelProductionReadiness();
 
 const app = express();
 app.set('trust proxy', 1);
