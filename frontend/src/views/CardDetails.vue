@@ -255,47 +255,20 @@
     <template v-if="!loading && !error">
     <!-- Section B – Quick snapshot tiles -->
     <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Tracked view: Bonus progress -->
-      <article v-if="isTracked" class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.bonusProgress') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          {{ bonusProgress.percent }}%
-        </p>
-        <p class="mt-1 text-sm text-slate-600">
-          {{ bonusProgress.current.toLocaleString() }} / {{ bonusProgress.target.toLocaleString() }} pts
-        </p>
-        <div class="mt-3">
-          <ProgressBar
-            :value="bonusProgress.current"
-            :max="bonusProgress.target"
-          />
-        </div>
-      </article>
+      <MetricTile v-if="isTracked" :label="$t('cardDetails.bonusProgress')" :value="`${bonusProgress.percent}%`">
+        <p class="text-sm text-slate-600">{{ bonusProgress.current.toLocaleString() }} / {{ bonusProgress.target.toLocaleString() }} pts</p>
+        <ProgressBar :value="bonusProgress.current" :max="bonusProgress.target" class="mt-3" />
+      </MetricTile>
 
-      <!-- Catalogue preview: Annual fee -->
-      <article v-if="!isTracked" class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.annualFee') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          {{ annualFeeLabel }}
-        </p>
-        <p v-if="card.annualCost === 0" class="mt-1 text-sm text-slate-600">
-          {{ $t('cardDetails.noOngoingCost') }}
-        </p>
-      </article>
+      <MetricTile v-if="!isTracked" :label="$t('cardDetails.annualFee')" :value="annualFeeLabel">
+        <p v-if="card.annualCost === 0" class="text-sm text-slate-600">{{ $t('cardDetails.noOngoingCost') }}</p>
+      </MetricTile>
 
-      <article class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.spendRequirement') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          <span v-if="showTracking">${{ spendProgress.current.toLocaleString() }}</span>
-          <span v-else>{{ card.minSpend != null ? '$' + card.minSpend.toLocaleString() : '–' }}</span>
-        </p>
-        <p class="mt-1 text-sm text-slate-600">
+      <MetricTile
+        :label="$t('cardDetails.spendRequirement')"
+        :value="showTracking ? `$${spendProgress.current.toLocaleString()}` : (card.minSpend != null ? '$' + card.minSpend.toLocaleString() : '–')"
+      >
+        <p class="text-sm text-slate-600">
           <span v-if="showTracking">
             {{ $t('cardDetails.ofAmountInMonths', { amount: '$' + spendProgress.target.toLocaleString(), months: card.bonusWindowMonths ?? '–' }) }}
           </span>
@@ -303,59 +276,31 @@
             {{ $t('cardDetails.totalSpendInMonths', { months: card.bonusWindowMonths ?? '–' }) }}
           </span>
         </p>
-        <div v-if="showTracking" class="mt-3">
-          <ProgressBar
-            :value="spendProgress.current"
-            :max="spendProgress.target"
-            :variant="spendProgress.variant"
-          />
-        </div>
-      </article>
-
-      <!-- Tracked view: Days remaining -->
-      <article v-if="isTracked" class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.daysRemaining') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          {{ card.daysRemaining != null ? card.daysRemaining : '–' }}
-        </p>
-        <p class="mt-1 text-sm text-slate-600">
-          {{ $t('cardDetails.daysLeftToHitBonus') }}
-        </p>
-        <Badge
+        <ProgressBar
+          v-if="showTracking"
           class="mt-3"
-          :variant="urgencyVariant"
-          size="sm"
-        >
-          {{ urgencyLabel }}
-        </Badge>
-      </article>
+          :value="spendProgress.current"
+          :max="spendProgress.target"
+          :variant="spendProgress.variant"
+        />
+      </MetricTile>
 
-      <!-- Catalogue preview: Bonus points -->
-      <article v-if="!isTracked" class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.bonusPoints') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          {{ card.bonusPointsTarget != null ? card.bonusPointsTarget.toLocaleString() + ' pts' : '–' }}
-        </p>
-        <p class="mt-1 text-sm text-slate-600">
-          {{ $t('cardDetails.pointsWhenMeetRequirement') }}
-        </p>
-      </article>
+      <MetricTile v-if="isTracked" :label="$t('cardDetails.daysRemaining')" :value="card.daysRemaining != null ? card.daysRemaining : '–'">
+        <p class="text-sm text-slate-600">{{ $t('cardDetails.daysLeftToHitBonus') }}</p>
+        <Badge class="mt-3" :variant="urgencyVariant" size="sm">{{ urgencyLabel }}</Badge>
+      </MetricTile>
 
-      <article class="border border-slate-200 bg-white p-5">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {{ $t('cardDetails.estimatedValue') }}
-        </p>
-        <p class="mt-2 text-2xl font-bold text-slate-900">
-          {{ card.estimatedValue }}
-        </p>
-        <p v-if="card.centsPerPoint != null" class="mt-1 text-sm text-slate-600">
-          {{ $t('cardDetails.centsPerPoint', { cents: card.centsPerPoint }) }}
-        </p>
-      </article>
+      <MetricTile
+        v-if="!isTracked"
+        :label="$t('cardDetails.bonusPoints')"
+        :value="card.bonusPointsTarget != null ? card.bonusPointsTarget.toLocaleString() + ' pts' : '–'"
+      >
+        <p class="text-sm text-slate-600">{{ $t('cardDetails.pointsWhenMeetRequirement') }}</p>
+      </MetricTile>
+
+      <MetricTile :label="$t('cardDetails.estimatedValue')" :value="card.estimatedValue">
+        <p v-if="card.centsPerPoint != null" class="text-sm text-slate-600">{{ $t('cardDetails.centsPerPoint', { cents: card.centsPerPoint }) }}</p>
+      </MetricTile>
     </section>
 
     <!-- Section C – Analytics row (tracked only) -->
@@ -816,6 +761,7 @@ import CardNetworkLogo from '../components/CardNetworkLogo.vue';
 import ProgressBar from '../components/ProgressBar.vue';
 import Panel from '../components/Panel.vue';
 import ContentCard from '../components/ContentCard.vue';
+import MetricTile from '../components/MetricTile.vue';
 
 const route = useRoute();
 const { t } = useI18n();

@@ -13,6 +13,9 @@
     <Badge v-if="trend" variant="info" size="sm" class="mt-2">
       {{ trend }}
     </Badge>
+    <div v-if="$slots.default" class="mt-2">
+      <slot />
+    </div>
   </component>
 </template>
 
