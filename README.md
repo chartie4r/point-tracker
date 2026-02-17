@@ -25,6 +25,10 @@ The SQLite file is created at `backend/prisma/dev.db`. No database server or Doc
 
 API runs at http://localhost:3000.
 
+Health checks:
+- Liveness: `GET /api/health`
+- Readiness (includes DB ping): `GET /api/readiness`
+
 ### 3. Frontend
 
 ```bash
@@ -42,4 +46,5 @@ App runs at http://localhost:5173 (proxies `/api` to the backend).
 
 ## Environment
 
-- `backend/.env`: `DATABASE_URL` (default `file:./prisma/dev.db`), `PORT` (default 3000), `SCRAPER_RATE_LIMIT_MS` (default 3000)
+- `backend/.env`: `DATABASE_URL` (default `file:./prisma/dev.db`), `PORT` (default 3000), `SCRAPER_RATE_LIMIT_MS` (default 3000), `SESSION_SECRET`, `CORS_ORIGIN`
+- Auth protection knobs: `AUTH_RATE_LIMIT_WINDOW_MS` (default 900000), `AUTH_RATE_LIMIT_MAX_REQUESTS` (default 10)
